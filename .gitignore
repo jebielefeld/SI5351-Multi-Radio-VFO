@@ -179,3 +179,28 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+New Text Document.txt
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Runtime session/config files
+pc_software/session/
+app_settings.json
+
+# Python cache
+__pycache__/
+*.pyc
+
+# VS Code
+.vscode/
+
+# Windows temp files
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
