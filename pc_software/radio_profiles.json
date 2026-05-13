@@ -1,0 +1,444 @@
+{
+    "schema_version": "1.0",
+    "profiles": [
+        {
+            "id": "swan_400",
+            "display_name": "Swan 400 - Swan 410 VFO",
+            "manufacturer": "Swan",
+            "model": "400",
+            "radio_type": "transceiver",
+            "frequency_units": "Hz",
+            "default_output": "OUT0",
+            "bands": [
+                {
+                    "id": "80m",
+                    "display_name": "80 meters",
+                    "rf_min_hz": 3500000,
+                    "rf_max_hz": 4000000,
+                    "default_rf_hz": 3885000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 3500000,
+                        "rf_end_hz": 4000000,
+                        "vfo_start_hz": 8673000,
+                        "vfo_end_hz": 9173000
+                    },
+                    "filter_band": "8-16MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "40m",
+                    "display_name": "40 meters",
+                    "rf_min_hz": 7000000,
+                    "rf_max_hz": 7500000,
+                    "default_rf_hz": 7200000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 7000000,
+                        "rf_end_hz": 7500000,
+                        "vfo_start_hz": 12173000,
+                        "vfo_end_hz": 12673000
+                    },
+                    "filter_band": "8-16MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "20m",
+                    "display_name": "20 meters",
+                    "rf_min_hz": 14000000,
+                    "rf_max_hz": 14500000,
+                    "default_rf_hz": 14250000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 14000000,
+                        "rf_end_hz": 14500000,
+                        "vfo_start_hz": 8827000,
+                        "vfo_end_hz": 9327000
+                    },
+                    "filter_band": "8-16MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "15m",
+                    "display_name": "15 meters",
+                    "rf_min_hz": 21000000,
+                    "rf_max_hz": 21500000,
+                    "default_rf_hz": 21250000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 21000000,
+                        "rf_end_hz": 21500000,
+                        "vfo_start_hz": 15827000,
+                        "vfo_end_hz": 16327000
+                    },
+                    "filter_band": "8-16MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "10m_a",
+                    "display_name": "10 meters A - 28.0 to 28.5 MHz",
+                    "rf_min_hz": 28000000,
+                    "rf_max_hz": 28500000,
+                    "default_rf_hz": 28300000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 28000000,
+                        "rf_end_hz": 28500000,
+                        "vfo_start_hz": 22827000,
+                        "vfo_end_hz": 23327000
+                    },
+                    "filter_band": "16-30MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "10m_b",
+                    "display_name": "10 meters B - 28.5 to 29.0 MHz",
+                    "rf_min_hz": 28500000,
+                    "rf_max_hz": 29000000,
+                    "default_rf_hz": 28700000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 28500000,
+                        "rf_end_hz": 29000000,
+                        "vfo_start_hz": 23327000,
+                        "vfo_end_hz": 23827000
+                    },
+                    "filter_band": "16-30MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "10m_c",
+                    "display_name": "10 meters C - 29.0 to 29.5 MHz",
+                    "rf_min_hz": 29000000,
+                    "rf_max_hz": 29500000,
+                    "default_rf_hz": 29200000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 29000000,
+                        "rf_end_hz": 29500000,
+                        "vfo_start_hz": 23827000,
+                        "vfo_end_hz": 24327000
+                    },
+                    "filter_band": "16-30MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "10m_d",
+                    "display_name": "10 meters D - 29.2 to 29.7 MHz",
+                    "rf_min_hz": 29200000,
+                    "rf_max_hz": 29700000,
+                    "default_rf_hz": 29400000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 29200000,
+                        "rf_end_hz": 29700000,
+                        "vfo_start_hz": 24027000,
+                        "vfo_end_hz": 24527000
+                    },
+                    "filter_band": "16-30MHz",
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "id": "swan_350c",
+            "display_name": "Swan 350C - Swan 410C VFO",
+            "manufacturer": "Swan",
+            "model": "350C",
+            "radio_type": "transceiver",
+            "frequency_units": "Hz",
+            "default_output": "OUT1",
+            "bands": [
+                {
+                    "id": "80m",
+                    "display_name": "80 meters",
+                    "rf_min_hz": 3500000,
+                    "rf_max_hz": 4000000,
+                    "default_rf_hz": 3885000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 3500000,
+                        "rf_end_hz": 4000000,
+                        "vfo_start_hz": 9000000,
+                        "vfo_end_hz": 9500000
+                    },
+                    "filter_band": "8-16MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "40m",
+                    "display_name": "40 meters",
+                    "rf_min_hz": 7000000,
+                    "rf_max_hz": 7500000,
+                    "default_rf_hz": 7200000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 7000000,
+                        "rf_end_hz": 7500000,
+                        "vfo_start_hz": 12500000,
+                        "vfo_end_hz": 13000000
+                    },
+                    "filter_band": "8-16MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "20m",
+                    "display_name": "20 meters",
+                    "rf_min_hz": 14000000,
+                    "rf_max_hz": 14500000,
+                    "default_rf_hz": 14250000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 14000000,
+                        "rf_end_hz": 14500000,
+                        "vfo_start_hz": 8500000,
+                        "vfo_end_hz": 9000000
+                    },
+                    "filter_band": "8-16MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "15m",
+                    "display_name": "15 meters",
+                    "rf_min_hz": 21000000,
+                    "rf_max_hz": 21500000,
+                    "default_rf_hz": 21250000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 21000000,
+                        "rf_end_hz": 21500000,
+                        "vfo_start_hz": 15500000,
+                        "vfo_end_hz": 16000000
+                    },
+                    "filter_band": "8-16MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "10m_a",
+                    "display_name": "10 meters A - 28.0 to 28.5 MHz",
+                    "rf_min_hz": 28000000,
+                    "rf_max_hz": 28500000,
+                    "default_rf_hz": 28300000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 28000000,
+                        "rf_end_hz": 28500000,
+                        "vfo_start_hz": 22500000,
+                        "vfo_end_hz": 23000000
+                    },
+                    "filter_band": "16-30MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "10m_b",
+                    "display_name": "10 meters B - 28.5 to 29.0 MHz",
+                    "rf_min_hz": 28500000,
+                    "rf_max_hz": 29000000,
+                    "default_rf_hz": 28700000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 28500000,
+                        "rf_end_hz": 29000000,
+                        "vfo_start_hz": 23000000,
+                        "vfo_end_hz": 23500000
+                    },
+                    "filter_band": "16-30MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "10m_c",
+                    "display_name": "10 meters C - 29.0 to 29.5 MHz",
+                    "rf_min_hz": 29000000,
+                    "rf_max_hz": 29500000,
+                    "default_rf_hz": 29200000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 29000000,
+                        "rf_end_hz": 29500000,
+                        "vfo_start_hz": 23500000,
+                        "vfo_end_hz": 24000000
+                    },
+                    "filter_band": "16-30MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "10m_d",
+                    "display_name": "10 meters D - 29.2 to 29.7 MHz",
+                    "rf_min_hz": 29200000,
+                    "rf_max_hz": 29700000,
+                    "default_rf_hz": 29400000,
+                    "translation": {
+                        "mode": "linear_map",
+                        "rf_start_hz": 29200000,
+                        "rf_end_hz": 29700000,
+                        "vfo_start_hz": 23700000,
+                        "vfo_end_hz": 24200000
+                    },
+                    "filter_band": "16-30MHz",
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "id": "eico_720",
+            "display_name": "Eico 720 Transmitter",
+            "manufacturer": "Eico",
+            "model": "720",
+            "radio_type": "transmitter",
+            "frequency_units": "Hz",
+            "default_output": "OUT2",
+            "bands": [
+                {
+                    "id": "80m",
+                    "display_name": "80 meters",
+                    "rf_min_hz": 3500000,
+                    "rf_max_hz": 4000000,
+                    "default_rf_hz": 3885000,
+                    "translation": {
+                        "mode": "direct"
+                    },
+                    "filter_band": "1.8-4MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "40m",
+                    "display_name": "40 meters",
+                    "rf_min_hz": 7000000,
+                    "rf_max_hz": 7300000,
+                    "default_rf_hz": 7150000,
+                    "translation": {
+                        "mode": "direct"
+                    },
+                    "filter_band": "4-8MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "20m",
+                    "display_name": "20 meters",
+                    "rf_min_hz": 14000000,
+                    "rf_max_hz": 14350000,
+                    "default_rf_hz": 14286000,
+                    "translation": {
+                        "mode": "multiply",
+                        "multiplier": 2
+                    },
+                    "filter_band": "4-8MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "15m",
+                    "display_name": "15 meters",
+                    "rf_min_hz": 21000000,
+                    "rf_max_hz": 21450000,
+                    "default_rf_hz": 21300000,
+                    "translation": {
+                        "mode": "multiply",
+                        "multiplier": 3
+                    },
+                    "filter_band": "4-8MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "10m",
+                    "display_name": "10 meters",
+                    "rf_min_hz": 28000000,
+                    "rf_max_hz": 29700000,
+                    "default_rf_hz": 28600000,
+                    "translation": {
+                        "mode": "multiply",
+                        "multiplier": 4
+                    },
+                    "filter_band": "4-8MHz",
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "id": "heathkit_dx100",
+            "display_name": "Heathkit DX-100 Transmitter",
+            "manufacturer": "Heathkit",
+            "model": "DX-100",
+            "radio_type": "transmitter",
+            "frequency_units": "Hz",
+            "default_output": "OUT3",
+            "bands": [
+                {
+                    "id": "160m",
+                    "display_name": "160 meters",
+                    "rf_min_hz": 1800000,
+                    "rf_max_hz": 2000000,
+                    "default_rf_hz": 1885000,
+                    "translation": {
+                        "mode": "direct"
+                    },
+                    "filter_band": "1.8-4MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "80m",
+                    "display_name": "80 meters",
+                    "rf_min_hz": 3500000,
+                    "rf_max_hz": 4000000,
+                    "default_rf_hz": 3885000,
+                    "translation": {
+                        "mode": "multiply",
+                        "multiplier": 2
+                    },
+                    "filter_band": "1.8-4MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "40m",
+                    "display_name": "40 meters",
+                    "rf_min_hz": 7000000,
+                    "rf_max_hz": 7300000,
+                    "default_rf_hz": 7150000,
+                    "translation": {
+                        "mode": "direct"
+                    },
+                    "filter_band": "4-8MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "20m",
+                    "display_name": "20 meters",
+                    "rf_min_hz": 14000000,
+                    "rf_max_hz": 14350000,
+                    "default_rf_hz": 14286000,
+                    "translation": {
+                        "mode": "multiply",
+                        "multiplier": 2
+                    },
+                    "filter_band": "4-8MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "15m",
+                    "display_name": "15 meters",
+                    "rf_min_hz": 21000000,
+                    "rf_max_hz": 21450000,
+                    "default_rf_hz": 21300000,
+                    "translation": {
+                        "mode": "multiply",
+                        "multiplier": 3
+                    },
+                    "filter_band": "4-8MHz",
+                    "enabled": true
+                },
+                {
+                    "id": "10m",
+                    "display_name": "10 meters",
+                    "rf_min_hz": 28000000,
+                    "rf_max_hz": 29700000,
+                    "default_rf_hz": 28600000,
+                    "translation": {
+                        "mode": "multiply",
+                        "multiplier": 4
+                    },
+                    "filter_band": "4-8MHz",
+                    "enabled": true
+                }
+            ]
+        }
+    ]
+}
