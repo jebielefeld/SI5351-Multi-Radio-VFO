@@ -8,6 +8,8 @@
 #   - Operator-facing output labels are Output 1 through Output 6.
 #   - Internal firmware protocol remains OUT0 through OUT5.
 
+from tkinter import dialog
+
 from PySide6.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -39,6 +41,7 @@ from output_manager import (
 from output_manager_window import OutputManagerWindow
 from session_manager import SessionManager
 from app_settings import AppSettings
+from about_dialog import AboutDialog
 
 
 class MainWindow(QMainWindow):
@@ -129,6 +132,7 @@ class MainWindow(QMainWindow):
         self.load_session_button = QPushButton("Load Session")
         self.arrange_windows_button = QPushButton("Arrange Windows")
         self.monitor_button = QPushButton("Monitor OFF")
+        self.about_button = QPushButton("About")
 
         self.refresh_button.clicked.connect(self.refresh_ports)
         self.connect_button.clicked.connect(self.connect_radio)
@@ -139,6 +143,7 @@ class MainWindow(QMainWindow):
         self.load_session_button.clicked.connect(self.load_session_profile)
         self.arrange_windows_button.clicked.connect(self.arrange_radio_windows)
         self.monitor_button.clicked.connect(self.toggle_monitor)
+        self.about_button.clicked.connect(self.show_about_dialog)
 
         port_row.addWidget(self.port_label)
         port_row.addWidget(self.port_combo)
@@ -151,6 +156,7 @@ class MainWindow(QMainWindow):
         port_row.addWidget(self.load_session_button)
         port_row.addWidget(self.arrange_windows_button)
         port_row.addWidget(self.monitor_button)
+        port_row.addWidget(self.about_button)
         main_layout.addLayout(port_row)
 
         radio_row = QHBoxLayout()
@@ -280,7 +286,10 @@ class MainWindow(QMainWindow):
     def populate_output_combo(self, combo):
         combo.clear()
         for i in range(6):
-            combo.addItem(output_name_to_user_label(index_to_output_name(i)), index_to_output_name(i))
+            combo.addItem(
+                output_name_to_user_label(index_to_output_name(i)),
+                index_to_output_name(i),
+            )
 
     def combo_current_output(self, combo):
         data = combo.currentData()
@@ -446,8 +455,6 @@ class MainWindow(QMainWindow):
         if owner in self.radio_windows:
             self.radio_windows.remove(owner)
 
-
-
     def schedule_auto_restore(self):
         """
         Run auto-restore after profile initialization and after the window
@@ -484,7 +491,6 @@ class MainWindow(QMainWindow):
             self.log_message(f"Auto-saved last session: {path}")
         except Exception as e:
             self.log_message(f"Auto-save error: {e}")
-
 
     def find_radio_index_by_name(self, display_name):
         for i in range(self.radio_combo.count()):
@@ -687,10 +693,6 @@ class MainWindow(QMainWindow):
         self.set_active_window(self.window_id)
         self.ensure_all_windows_visible()  # v4D6E
 
-
-
-
-
     def set_active_window(self, owner_id):
         """
         Mark one radio control window as active.
@@ -744,8 +746,6 @@ class MainWindow(QMainWindow):
         self.set_active_window(self.window_id)
         super().mousePressEvent(event)
 
-
-
     def clamp_widget_to_visible_screen(self, widget):
         """
         Force a window/widget back onto the visible desktop area.
@@ -791,7 +791,6 @@ class MainWindow(QMainWindow):
         self.ensure_visible_on_screen()
         for window in list(self.radio_windows):
             self.clamp_widget_to_visible_screen(window)
-
 
     def visible_radio_windows(self):
         """
@@ -883,7 +882,6 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.log_message(f"Arrange Windows error: {e}")
 
-
     def focus_window_by_owner_id(self, owner_id):
         """
         Bring the window that owns a selected Output Manager row to the front.
@@ -906,7 +904,9 @@ class MainWindow(QMainWindow):
                     window.activateWindow()
                     if hasattr(window, "freq_display"):
                         window.freq_display.setFocus()
-                    self.log_message(f"Focused {getattr(window, 'window_name', 'Radio Window')}")
+                    self.log_message(
+                        f"Focused {getattr(window, 'window_name', 'Radio Window')}"
+                    )
                     return
 
             self.log_message("No open window found for selected output")
@@ -914,6 +914,9 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.log_message(f"Focus window error: {e}")
 
+    def show_about_dialog(self):
+        dialog = AboutDialog(self)
+        dialog.exec()
 
     def show_output_manager(self):
         if self.output_manager_window is None:
@@ -1342,10 +1345,12 @@ class MainWindow(QMainWindow):
                 nl = chr(10)
                 message = (
                     f"{port} appears to be used by another program."
-                    + nl + nl
+                    + nl
+                    + nl
                     + "Close Arduino Serial Monitor, another terminal program, "
                     + "or any other program using that COM port."
-                    + nl + nl
+                    + nl
+                    + nl
                     + "You may also select another COM port and try again."
                 )
                 QMessageBox.warning(self, "USB COM Port Busy", message)
@@ -1354,7 +1359,12 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(
                     self,
                     "USB COM Connection Failed",
-                    "Could not connect to " + port + "." + chr(10) + chr(10) + error_text,
+                    "Could not connect to "
+                    + port
+                    + "."
+                    + chr(10)
+                    + chr(10)
+                    + error_text,
                 )
                 self.log_message(f"Connection error on {port}: {e}")
 
@@ -1494,8 +1504,6 @@ class MainWindow(QMainWindow):
             self.update_output_manager_state()
             self.log_message(f"Main Step: {self.format_step()}")
 
-
-
     def normalize_band_name(self, band_name):
         """
         Normalize band names enough for safety comparison.
@@ -1541,10 +1549,7 @@ class MainWindow(QMainWindow):
             for band, entries in tx_by_band.items():
                 if len(entries) > 1:
                     danger_messages.append(
-                        "Same-band TX conflict on "
-                        + band
-                        + " — "
-                        + "; ".join(entries)
+                        "Same-band TX conflict on " + band + " — " + "; ".join(entries)
                     )
 
             if danger_messages:
@@ -1615,7 +1620,6 @@ class MainWindow(QMainWindow):
             except Exception:
                 pass
 
-
     def update_global_rf_indicator(self):
         """
         Show one global RF safety summary for the whole VFO system.
@@ -1657,7 +1661,6 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.log_message(f"Global RF indicator error: {e}")
 
-
     def set_rf_output(self, enabled, reason=""):
         if not self.link.is_connected():
             self.log_message("RF enable ignored: serial port not connected")
@@ -1686,7 +1689,6 @@ class MainWindow(QMainWindow):
             )
         except Exception as e:
             self.log_message(f"RF enable error: {e}")
-
 
     def shutdown_system(self):
         self.log_message("System shutdown initiated")
@@ -1727,4 +1729,3 @@ class MainWindow(QMainWindow):
             event.accept()
         else:
             event.ignore()
-
