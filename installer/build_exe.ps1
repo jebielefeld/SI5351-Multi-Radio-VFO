@@ -21,16 +21,24 @@ if (Test-Path $PackageDir) {
     Remove-Item $PackageDir -Recurse -Force
 }
 
-if (Test-Path "SI5351_Multi_Radio_VFO.spec") {
-    Remove-Item "SI5351_Multi_Radio_VFO.spec" -Force
-}
+Get-ChildItem -Path $SoftwareDir -Filter "*.spec" -ErrorAction SilentlyContinue | Remove-Item -Force
 
-# Build EXE
 python -m PyInstaller `
     --noconfirm `
+    --clean `
     --onefile `
     --windowed `
+    --paths "." `
     --name SI5351_Multi_Radio_VFO `
+    --icon "..\assets\SI5351_Multi_Radio_VFO.ico" `
+    --hidden-import=session_manager `
+    --hidden-import=output_manager `
+    --hidden-import=output_manager_window `
+    --hidden-import=profile_manager `
+    --hidden-import=radio_window `
+    --hidden-import=radio_math `
+    --hidden-import=serial_link `
+    --hidden-import=cat_radio `
     main.py
 
 # Create clean package folder

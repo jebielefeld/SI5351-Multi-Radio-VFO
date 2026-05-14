@@ -5,6 +5,7 @@
 # and starts the main GUI window.
 
 import sys
+import session_manager  # Force PyInstaller to include session_manager.py
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 
