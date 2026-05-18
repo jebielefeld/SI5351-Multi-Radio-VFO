@@ -181,26 +181,36 @@ cython_debug/
 .cursorindexingignore
 New Text Document.txt
 
-# PyInstaller
+# ------------------------------------------------------------
+# SI5351 Multi-Radio VFO project-specific ignores
+# ------------------------------------------------------------
+
+# PyInstaller / build output
 build/
 dist/
 *.spec
 
+# Installer output
+installer_output/
+*.exe
+*.msi
+
 # Runtime session/config files
+pc_software/app_settings.json
+pc_software/sessions/
 pc_software/session/
-app_settings.json
+sessions/
+last_session.json
+_last_session.json
 
-# Python cache
-__pycache__/
-*.pyc
-
-# VS Code
+# VS Code local workspace settings
 .vscode/
 
 # Windows temp files
 Thumbs.db
 Desktop.ini
 
-# Temporary files
+# Temporary / backup files
 *.tmp
 *.bak
+New Text Document.txt
