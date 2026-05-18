@@ -1,30 +1,75 @@
 # SI5351 Multi-Radio VFO Control System
 
-A PC-controlled multi-radio synthesized VFO platform for vintage amateur radio equipment using Arduino Nano, dual SI5351 synthesizers, and a PySide6 desktop control application.
+A multi-output synthesized VFO platform for vintage amateur radio equipment using an Arduino Nano, dual SI5351 synthesizers, and a PySide6 desktop control application.
+
+---
+
+# Current Release Status
+
+**v0.9.0-beta**
+
+The software is currently in active beta development and has been validated for:
+
+- Windows desktop deployment
+- installer-based installation
+- session persistence
+- multi-window operation
+- COM reconnect after reboot
+- dual SI5351 operation
+- OUT0–OUT5 routing architecture
 
 ---
 
 # Overview
 
-The SI5351 Multi-Radio VFO Control System is designed to replace or augment unstable vintage analog VFOs and crystal oscillators with highly stable digitally synthesized frequency sources.
+The SI5351 Multi-Radio VFO Control System replaces unstable analog VFOs and crystal oscillators with digitally synthesized RF sources controlled from a Windows desktop application.
 
-The system supports multiple simultaneous radio control windows, multiple RF outputs, radio-specific frequency translation profiles, and desktop-based operating control.
+The project was designed specifically for vintage amateur radio transmitters and transceivers that require stable external VFO or LO signals.
+
+The system supports:
+
+- multiple simultaneous radio control windows
+- multiple RF outputs
+- radio-specific frequency translation
+- session persistence
+- RF output routing
+- desktop operating control
 
 The architecture separates:
 
 - GUI intelligence and radio math
 - hardware execution
-- RF output routing
+- RF output management
 - session management
 - radio profile configuration
 
-The project is intended for:
+---
 
-- Vintage ham radio restoration
-- Multi-radio operating desks
-- Lab/bench signal generation
-- External VFO replacement
-- Stable LO/VFO experimentation
+# Why This Project Exists
+
+Many classic amateur radio transmitters and transceivers suffer from:
+
+- VFO drift
+- aging analog oscillators
+- unavailable crystals
+- expensive original external VFO units
+- unstable warm-up behavior
+
+This project provides:
+
+- stable synthesized frequency generation
+- modern desktop operating convenience
+- support for multiple vintage radios simultaneously
+- configurable radio translation profiles
+- compact external VFO replacement capability
+
+The system is intended for:
+
+- vintage ham radio restoration
+- multi-radio operating desks
+- bench/lab signal generation
+- external VFO replacement
+- synthesized local oscillator experimentation
 
 ---
 
@@ -47,25 +92,66 @@ The project is intended for:
 
 ---
 
-# System Architecture
+# Screenshots
 
-## Hardware
+## Main Window
 
-### Controller
+![Main Window](docs/screenshots/main_window.png)
+
+---
+
+## Compact Radio Window
+
+![Compact Window](docs/screenshots/compact_window.png)
+
+---
+
+## Full Radio Window
+
+![Full Window](docs/screenshots/full_window.png)
+
+---
+
+## Multi-Window Operating Layout
+
+![Multi Window Layout](docs/screenshots/multi_window_layout.png)
+
+---
+
+## Output Manager
+
+![Output Manager](docs/screenshots/output_manager.png)
+
+---
+
+## About Dialog
+
+![About Dialog](docs/screenshots/about_dialog.png)
+
+---
+
+# Hardware Architecture
+
+## Controller
+
 - Arduino Nano
 
-### I2C Multiplexer
+## I2C Multiplexer
+
 - TCA9548A @ 0x70
 
-### RF Synthesizers
+## RF Synthesizers
+
 - 2 × Adafruit SI5351A modules
 
 Each SI5351 provides:
+
 - CLK0
 - CLK1
 - CLK2
 
 Total outputs:
+
 - OUT0–OUT5
 
 ---
@@ -82,6 +168,7 @@ Total outputs:
 | OUT5 | SI5351 #2 CLK2 |
 
 GUI labels:
+
 - BNC1–BNC6
 
 ---
@@ -96,7 +183,7 @@ GUI labels:
 | Heathkit DX-100 | multiply/direct |
 | Clegg Thor 6 | direct |
 
-Additional radio profiles can be added.
+Additional radio profiles can be added through the profile system.
 
 ---
 
@@ -106,21 +193,21 @@ Additional radio profiles can be added.
 
 The PySide6 GUI performs:
 
-- Radio profile math
-- Frequency translation
-- Session management
-- Output assignment
-- Multi-window coordination
-- Serial communication management
+- radio profile math
+- frequency translation
+- session management
+- output assignment
+- multi-window coordination
+- serial communication management
 
 ## Arduino Nano = Execution Engine
 
-The Nano performs:
+The Arduino Nano performs:
 
 - SI5351 frequency programming
 - RF output switching
 - PTT state reporting
-- Hardware-level execution only
+- hardware-level execution only
 
 Important architectural rule:
 
@@ -139,235 +226,3 @@ F2xxxxxxxxxxx;
 F3xxxxxxxxxxx;
 F4xxxxxxxxxxx;
 F5xxxxxxxxxxx;
-```
-
-## RF Enable Commands
-
-```text
-E01;
-E00;
-E31;
-E30;
-```
-
-## PTT Feedback
-
-```text
-TXx;
-RXx;
-```
-
----
-
-# RF / PTT / SPOT Logic
-
-- PTT LOW = RF ON
-- PTT HIGH = RF OFF
-- SPOT enables RF during RX only
-- TX overrides SPOT
-- RF state is NOT restored at startup for safety
-
----
-
-# Current Stable Freeze
-
-```text
-SI5351_VFO_PC_v4D6I_INSTALLER_DEPLOYMENT_VALIDATED
-```
-
-Stable features verified:
-
-- COM reconnect
-- EXE shutdown
-- Session restore
-- Floating windows
-- Output Manager
-- Installer deployment
-- No orphan EXE processes
-
----
-
-# Screenshots
-
-## Main Window
-
-![Main Window](assets/screenshots/main_window.png)
-
----
-
-## Compact Radio Window
-
-![Compact Window](assets/screenshots/compact_window.png)
-
----
-
-## Full Radio Window
-
-![Full Window](assets/screenshots/full_window.png)
-
----
-
-## Output Manager
-
-![Output Manager](assets/screenshots/Output_Manager.png)
-
----
-
-## About Dialog
-
-![About Dialog](assets/screenshots/About_Dialog.png)
-
-
-Suggested screenshots:
-
-- Main Window
-- Compact Radio Window
-- Full Radio Window
-- Output Manager
-- About Dialog
-
----
-
-# Installation
-
-## End User Installation
-
-1. Run installer:
-   - `SI5351_Multi_Radio_VFO_Setup.exe`
-
-2. Launch from desktop shortcut
-
-3. Connect Arduino Nano USB
-
-4. Select COM port
-
-5. Press Connect
-
----
-
-# Developer Setup
-
-## Requirements
-
-- Python 3.14+
-- PySide6
-- pyserial
-- pyinstaller
-
-Install dependencies:
-
-```bash
-pip install pyside6 pyserial pyinstaller
-```
-
----
-
-# Build EXE
-
-From:
-
-```text
-pc_software/
-```
-
-Run:
-
-```bash
-pyinstaller --onefile --windowed --name SI5351_Multi_Radio_VFO main.py
-```
-
-Output EXE:
-
-```text
-dist/SI5351_Multi_Radio_VFO.exe
-```
-
----
-
-# Inno Setup Installer
-
-The installer packages the EXE generated from:
-
-```text
-dist/SI5351_Multi_Radio_VFO.exe
-```
-
-Important:
-Always rebuild the EXE before rebuilding the installer.
-
----
-
-# Current Directory Structure
-
-```text
-SI5351-Multi-Radio-VFO/
-│
-├── firmware/
-├── hardware/
-├── pc_software/
-│   ├── assets/
-│   ├── screenshots/
-│   ├── main.py
-│   ├── main_window.py
-│   ├── radio_profiles.json
-│   └── ...
-│
-├── docs/
-└── releases/
-```
-
----
-
-# Future Roadmap
-
-## v4E
-- README modernization
-- screenshots
-- branding
-
-## v4F
-- installer polish
-- release packaging
-
-## v5.0
-- Radio Profile Editor GUI
-- searchable help system
-- printable user manual
-
----
-
-# Engineering Rules
-
-## Serial Architecture
-
-Only ONE global:
-
-```python
-SerialLink()
-```
-
-instance is allowed.
-
-All windows share the same serial connection.
-
-## GUI Ownership
-
-The GUI owns:
-
-- profile math
-- translation logic
-- session logic
-
-The firmware remains execution-only.
-
----
-
-# License
-
-(Define later)
-
----
-
-# Acknowledgments
-
-Built for experimentation, restoration, and operation of classic amateur radio equipment using modern digital synthesis techniques.
