@@ -1,146 +1,373 @@
-# SI5351 Multi-Radio VFO Control Platform
+# SI5351 Multi-Radio VFO Control System
 
-A Windows PC-controlled multi-radio VFO platform for vintage ham radio equipment.
+A PC-controlled multi-radio synthesized VFO platform for vintage amateur radio equipment using Arduino Nano, dual SI5351 synthesizers, and a PySide6 desktop control application.
 
-This project uses a Python / PySide6 graphical control program, an Arduino Nano, a TCA9548A I2C multiplexer, and two Adafruit SI5351 clock generator modules to provide up to six independently controlled RF outputs.
+---
 
-Current freeze point:
+# Overview
+
+The SI5351 Multi-Radio VFO Control System is designed to replace or augment unstable vintage analog VFOs and crystal oscillators with highly stable digitally synthesized frequency sources.
+
+The system supports multiple simultaneous radio control windows, multiple RF outputs, radio-specific frequency translation profiles, and desktop-based operating control.
+
+The architecture separates:
+
+- GUI intelligence and radio math
+- hardware execution
+- RF output routing
+- session management
+- radio profile configuration
+
+The project is intended for:
+
+- Vintage ham radio restoration
+- Multi-radio operating desks
+- Lab/bench signal generation
+- External VFO replacement
+- Stable LO/VFO experimentation
+
+---
+
+# Major Features
+
+- Multi-radio simultaneous control
+- 6 independent RF outputs (OUT0–OUT5)
+- Dual SI5351 synthesizer support
+- TCA9548A I2C multiplexer architecture
+- Floating radio control windows
+- Compact and full operating modes
+- Session save/restore
+- Output conflict prevention
+- RF ON/OFF control
+- PTT/TX/RX synchronization
+- SPOT mode support
+- Radio profile translation system
+- PyInstaller standalone EXE support
+- Inno Setup installer support
+
+---
+
+# System Architecture
+
+## Hardware
+
+### Controller
+- Arduino Nano
+
+### I2C Multiplexer
+- TCA9548A @ 0x70
+
+### RF Synthesizers
+- 2 × Adafruit SI5351A modules
+
+Each SI5351 provides:
+- CLK0
+- CLK1
+- CLK2
+
+Total outputs:
+- OUT0–OUT5
+
+---
+
+# Output Mapping
+
+| Output | Hardware |
+|---|---|
+| OUT0 | SI5351 #1 CLK0 |
+| OUT1 | SI5351 #1 CLK1 |
+| OUT2 | SI5351 #1 CLK2 |
+| OUT3 | SI5351 #2 CLK0 |
+| OUT4 | SI5351 #2 CLK1 |
+| OUT5 | SI5351 #2 CLK2 |
+
+GUI labels:
+- BNC1–BNC6
+
+---
+
+# Supported Radios
+
+| Radio | Translation Model |
+|---|---|
+| Swan 400 | linear_map |
+| Swan 350C | linear_map |
+| Eico 720 | multiply |
+| Heathkit DX-100 | multiply/direct |
+| Clegg Thor 6 | direct |
+
+Additional radio profiles can be added.
+
+---
+
+# Software Architecture
+
+## Python GUI = System Brain
+
+The PySide6 GUI performs:
+
+- Radio profile math
+- Frequency translation
+- Session management
+- Output assignment
+- Multi-window coordination
+- Serial communication management
+
+## Arduino Nano = Execution Engine
+
+The Nano performs:
+
+- SI5351 frequency programming
+- RF output switching
+- PTT state reporting
+- Hardware-level execution only
+
+Important architectural rule:
+
+> Radio frequency translation logic remains in Python and is NOT performed in the Arduino firmware.
+
+---
+
+# Serial Protocol
+
+## Frequency Commands
 
 ```text
-SI5351_VFO_PC_v4D6E_PREVENT_ACCIDENTAL_MAXIMIZE_STABLE
+F0xxxxxxxxxxx;
+F1xxxxxxxxxxx;
+F2xxxxxxxxxxx;
+F3xxxxxxxxxxx;
+F4xxxxxxxxxxx;
+F5xxxxxxxxxxx;
+```
 
-_________________________________________________________________________
+## RF Enable Commands
 
-Project Status
+```text
+E01;
+E00;
+E31;
+E30;
+```
 
-This project is currently functional and under active development.
+## PTT Feedback
 
-Stable features include:
-
-Multi-radio floating control windows
-BNC 1 through BNC 6 output labeling
-OUT0 through OUT5 SI5351 output control
-Output Manager
-Global RF indicator
-PTT feedback display
-Per-window SPOT control
-Session auto-restore
-COM port conflict detection
-Band-aware safety warning system
-Window position safety
-Snap/maximize protection for radio windows
-Hardware Overview
-
-The hardware platform uses:
-
-Arduino Nano
-TCA9548A I2C multiplexer
-Two Adafruit SI5351 clock generator modules
-Six RF output connectors labeled BNC 1 through BNC 6
-
-Output mapping:
-
-BNC Output	Logical Output	SI5351 Module	Clock Output
-BNC 1	OUT0	SI5351 #1	CLK0
-BNC 2	OUT1	SI5351 #1	CLK1
-BNC 3	OUT2	SI5351 #1	CLK2
-BNC 4	OUT3	SI5351 #2	CLK0
-BNC 5	OUT4	SI5351 #2	CLK1
-BNC 6	OUT5	SI5351 #2	CLK2
-Software Architecture
-
-The system uses a split architecture:
-
-Component	Role
-Python / PySide6 GUI	System brain
-Arduino Nano firmware	Execution engine
-SerialLink	Shared COM interface
-radio_profiles.json	Radio frequency translation data
-
-The GUI owns all radio math. The Arduino firmware executes frequency and RF enable commands.
-
-Serial Protocol
-
-Frequency commands:
-
-F0xxxxxxxxxxx;   Set OUT0 frequency
-F1xxxxxxxxxxx;   Set OUT1 frequency
-F2xxxxxxxxxxx;   Set OUT2 frequency
-F3xxxxxxxxxxx;   Set OUT3 frequency
-F4xxxxxxxxxxx;   Set OUT4 frequency
-F5xxxxxxxxxxx;   Set OUT5 frequency
-
-RF enable commands:
-
-E01;   OUT0 RF ON
-E00;   OUT0 RF OFF
-E11;   OUT1 RF ON
-E10;   OUT1 RF OFF
-
-PTT feedback:
-
+```text
 TXx;
 RXx;
-RF Control Model
-PTT LOW = TX / RF ON
-PTT HIGH = RX / RF OFF
-SPOT enables RF in RX only
-TX overrides SPOT
-RF and SPOT are forced OFF at program startup
-Repository Layout
-firmware/       Arduino Nano firmware
-pc_software/    Python / PySide6 PC control software
-docs/           Documentation and reports
-installer/      Build and installer scripts
-examples/       Example radio profiles and test files
-Current Limitations
-The Adafruit SI5351 library provides chip-level output enable behavior, not true independent per-clock RF enable.
-The current safety system warns the operator but does not block RF operation.
-Installer, user manual, profile editor, and full schematic documentation are planned future work.
-Planned Next Phase
+```
 
-Planned enhancements:
+---
 
-Build standalone Windows EXE
-Create Windows installer for non-programmer users
-Add GUI radio profile editor
-Add searchable in-app help
-Create printable user manual
-Create full hardware wiring schematic
-Publish first official GitHub release
-License
+# RF / PTT / SPOT Logic
 
-This project is released under the MIT License.
+- PTT LOW = RF ON
+- PTT HIGH = RF OFF
+- SPOT enables RF during RX only
+- TX overrides SPOT
+- RF state is NOT restored at startup for safety
 
-_________________________________________________________________
+---
 
-## Basic Hardware Wiring
+# Current Stable Freeze
 
-### Arduino Nano → TCA9548A
+```text
+SI5351_VFO_PC_v4D6I_INSTALLER_DEPLOYMENT_VALIDATED
+```
 
-| Nano Pin | TCA9548A |
-|---|---|
-| A4 | SDA |
-| A5 | SCL |
-| 5V | VIN |
-| GND | GND |
+Stable features verified:
 
-### TCA9548A → SI5351 Modules
+- COM reconnect
+- EXE shutdown
+- Session restore
+- Floating windows
+- Output Manager
+- Installer deployment
+- No orphan EXE processes
 
-Both SI5351 modules use I2C address 0x60 and are isolated through separate TCA9548A channels.
+---
 
-| TCA9548A Channel | Device |
-|---|---|
-| Channel 0 | SI5351 #1 |
-| Channel 1 | SI5351 #2 |
+# Screenshots
 
-### RF Output Mapping
+## Main Window
 
-| Output | Physical Connector |
-|---|---|
-| OUT0 | BNC 1 |
-| OUT1 | BNC 2 |
-| OUT2 | BNC 3 |
-| OUT3 | BNC 4 |
-| OUT4 | BNC 5 |
-| OUT5 | BNC 6 |
+![Main Window](assets/screenshots/main_window.png)
+
+---
+
+## Compact Radio Window
+
+![Compact Window](assets/screenshots/compact_window.png)
+
+---
+
+## Full Radio Window
+
+![Full Window](assets/screenshots/full_window.png)
+
+---
+
+## Output Manager
+
+![Output Manager](assets/screenshots/Output_Manager.png)
+
+---
+
+## About Dialog
+
+![About Dialog](assets/screenshots/About_Dialog.png)
+
+
+Suggested screenshots:
+
+- Main Window
+- Compact Radio Window
+- Full Radio Window
+- Output Manager
+- About Dialog
+
+---
+
+# Installation
+
+## End User Installation
+
+1. Run installer:
+   - `SI5351_Multi_Radio_VFO_Setup.exe`
+
+2. Launch from desktop shortcut
+
+3. Connect Arduino Nano USB
+
+4. Select COM port
+
+5. Press Connect
+
+---
+
+# Developer Setup
+
+## Requirements
+
+- Python 3.14+
+- PySide6
+- pyserial
+- pyinstaller
+
+Install dependencies:
+
+```bash
+pip install pyside6 pyserial pyinstaller
+```
+
+---
+
+# Build EXE
+
+From:
+
+```text
+pc_software/
+```
+
+Run:
+
+```bash
+pyinstaller --onefile --windowed --name SI5351_Multi_Radio_VFO main.py
+```
+
+Output EXE:
+
+```text
+dist/SI5351_Multi_Radio_VFO.exe
+```
+
+---
+
+# Inno Setup Installer
+
+The installer packages the EXE generated from:
+
+```text
+dist/SI5351_Multi_Radio_VFO.exe
+```
+
+Important:
+Always rebuild the EXE before rebuilding the installer.
+
+---
+
+# Current Directory Structure
+
+```text
+SI5351-Multi-Radio-VFO/
+│
+├── firmware/
+├── hardware/
+├── pc_software/
+│   ├── assets/
+│   ├── screenshots/
+│   ├── main.py
+│   ├── main_window.py
+│   ├── radio_profiles.json
+│   └── ...
+│
+├── docs/
+└── releases/
+```
+
+---
+
+# Future Roadmap
+
+## v4E
+- README modernization
+- screenshots
+- branding
+
+## v4F
+- installer polish
+- release packaging
+
+## v5.0
+- Radio Profile Editor GUI
+- searchable help system
+- printable user manual
+
+---
+
+# Engineering Rules
+
+## Serial Architecture
+
+Only ONE global:
+
+```python
+SerialLink()
+```
+
+instance is allowed.
+
+All windows share the same serial connection.
+
+## GUI Ownership
+
+The GUI owns:
+
+- profile math
+- translation logic
+- session logic
+
+The firmware remains execution-only.
+
+---
+
+# License
+
+(Define later)
+
+---
+
+# Acknowledgments
+
+Built for experimentation, restoration, and operation of classic amateur radio equipment using modern digital synthesis techniques.

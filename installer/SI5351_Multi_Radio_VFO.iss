@@ -31,8 +31,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
 
 [Files]
-Source: "..\pc_software\dist\SI5351_Multi_Radio_VFO\SI5351_Multi_Radio_VFO.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\pc_software\dist\SI5351_Multi_Radio_VFO\radio_profiles.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\pc_software\dist\SI5351_Multi_Radio_VFO.exe"; DestDir: "{app}"; Flags: ignoreversion
+; Source: "..\pc_software\dist\SI5351_Multi_Radio_VFO\radio_profiles.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\pc_software\dist\SI5351_Multi_Radio_VFO\app_settings.json"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 [InstallDelete]

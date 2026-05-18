@@ -3,14 +3,35 @@
 # Loads and manages radio_profiles.json.
 # This file does not perform frequency math.
 # It only loads profiles and helps the GUI find radios and bands.
+#
+# PyInstaller note:
+# radio_profiles.json is bundled into the EXE using --add-data.
+# When running as a one-file EXE, PyInstaller extracts bundled data
+# to sys._MEIPASS. The resource_path() helper handles both normal
+# Python execution and frozen EXE execution.
 
 import json
+import sys
 from pathlib import Path
+
+
+def resource_path(relative_path: str) -> Path:
+    """
+    Return an absolute path to a bundled resource.
+
+    Works for:
+    - normal Python execution
+    - PyInstaller one-file EXE execution
+    """
+    if hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS) / relative_path
+
+    return Path(__file__).resolve().parent / relative_path
 
 
 class ProfileManager:
     def __init__(self, filename="radio_profiles.json"):
-        self.filename = Path(filename)
+        self.filename = resource_path(filename)
         self.data = {}
         self.profiles = []
 
@@ -44,7 +65,4 @@ class ProfileManager:
         return None
 
     def get_enabled_bands(self, profile):
-        return [
-            band for band in profile.get("bands", [])
-            if band.get("enabled", True)
-        ]
+        return [band for band in profile.get("bands", []) if band.get("enabled", True)]

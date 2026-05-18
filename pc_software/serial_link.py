@@ -21,20 +21,23 @@ class SerialLink:
         self.callbacks.append(callback)
 
     def connect(self, port_name):
+
+        print("CONNECT CALLED")
+        print(f"OPEN SERIAL: {port_name}")
+
         self.disconnect()
 
-        self.ser = serial.Serial(
-            port=port_name,
-            baudrate=DEFAULT_BAUD,
-            timeout=SERIAL_TIMEOUT,
-        )
+        try:
+            self.ser = serial.Serial(
+                port=port_name, baudrate=DEFAULT_BAUD, timeout=SERIAL_TIMEOUT
+            )
 
-        self.running = True
-        self.listener_thread = threading.Thread(
-            target=self._read_loop,
-            daemon=True,
-        )
-        self.listener_thread.start()
+            print("SERIAL OPEN SUCCESS")
+
+        except Exception as e:
+            print("SERIAL OPEN FAILED")
+            print(repr(e))
+            raise
 
     def disconnect(self):
         self.running = False

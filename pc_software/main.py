@@ -15,6 +15,7 @@ from main_window import MainWindow
 
 def main():
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(True)
 
     # Load radio profiles before starting the GUI.
     try:

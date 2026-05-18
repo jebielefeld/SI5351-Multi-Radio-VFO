@@ -1316,59 +1316,86 @@ class MainWindow(QMainWindow):
 
     def connect_radio(self):
         port = self.port_combo.currentText()
+
         if not port:
             self.log_message("No USB COM port selected")
             return
 
+        #
+        # STEP 1:
+        # Open serial port ONLY.
+        #
         try:
+            print("CONNECT CALLED")
+            print(f"OPEN SERIAL: {port}")
+
             self.link.connect(port)
-            self.app_settings.set("last_com_port", port)
-            self.log_message(f"Connected to {port} @ {DEFAULT_BAUD}")
-            self.set_connected_state(True)
-            self.freq_display.setFocus()
+
+            print("SERIAL OPEN SUCCESS")
 
         except Exception as e:
+
             error_text = str(e)
+            lower_error = error_text.lower()
 
             self.status_label.setText(f"{port} NOT AVAILABLE")
             self.status_label.setStyleSheet(
                 "background-color: red; color: white; font-weight: bold; padding: 3px;"
             )
 
-            lower_error = error_text.lower()
             if (
                 "access is denied" in lower_error
                 or "permission" in lower_error
                 or "could not open port" in lower_error
                 or "resource busy" in lower_error
             ):
+
                 nl = chr(10)
+
                 message = (
                     f"{port} appears to be used by another program."
                     + nl
                     + nl
                     + "Close Arduino Serial Monitor, another terminal program, "
                     + "or any other program using that COM port."
-                    + nl
-                    + nl
-                    + "You may also select another COM port and try again."
                 )
+
                 QMessageBox.warning(self, "USB COM Port Busy", message)
-                self.log_message(f"{port} used by another program or locked")
+
             else:
+
                 QMessageBox.warning(
                     self,
                     "USB COM Connection Failed",
-                    "Could not connect to "
-                    + port
-                    + "."
-                    + chr(10)
-                    + chr(10)
-                    + error_text,
+                    error_text,
                 )
-                self.log_message(f"Connection error on {port}: {e}")
 
             self.set_connected_state(False)
+            return
+
+        #
+        # STEP 2:
+        # Everything after serial open.
+        #
+        try:
+
+            self.app_settings.set("last_com_port", port)
+
+            self.log_message(f"Connected to {port} @ {DEFAULT_BAUD}")
+
+            self.set_connected_state(True)
+
+            self.freq_display.setFocus()
+
+        except Exception as e:
+
+            QMessageBox.warning(
+                self,
+                "Post-Connect Error",
+                f"Serial port opened successfully, but GUI initialization failed:\n\n{e}",
+            )
+
+            self.log_message(f"Post-connect error: {e}")
 
     def disconnect_radio(self):
         try:
@@ -1716,16 +1743,107 @@ class MainWindow(QMainWindow):
                 pass
 
     def closeEvent(self, event):
-        reply = QMessageBox.question(
-            self,
-            "Exit VFO System",
-            "Turn OFF all RF and close all radios?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes,
-        )
+        """
+        Clean shutdown handler.
 
-        if reply == QMessageBox.Yes:
-            self.shutdown_system()
-            event.accept()
-        else:
-            event.ignore()
+        Purpose:
+        - Stop timers
+        - Save session state
+        - Close child windows
+        - Disconnect serial port
+        - Allow Python/EXE process to terminate cleanly
+        """
+
+        print("APPLICATION SHUTDOWN")
+
+        try:
+            # Stop monitor/update timers if they exist.
+            if hasattr(self, "monitor_timer"):
+                self.monitor_timer.stop()
+
+            if hasattr(self, "status_timer"):
+                self.status_timer.stop()
+
+            # Save current session before closing child windows.
+            if hasattr(self, "save_session"):
+                self.save_session()
+
+            # Close floating radio windows.
+            if hasattr(self, "radio_windows"):
+                for window in list(self.radio_windows):
+                    try:
+                        window.close()
+                    except Exception as e:
+                        print(f"Radio window close error: {e}")
+
+            # Close Output Manager if open.
+            if hasattr(self, "output_manager") and self.output_manager is not None:
+                try:
+                    self.output_manager.close()
+                except Exception as e:
+                    print(f"Output Manager close error: {e}")
+
+            # Disconnect serial link.
+            if hasattr(self, "link"):
+                self.link.disconnect()
+            elif hasattr(self, "serial"):
+                self.serial.disconnect()
+
+        except Exception as e:
+            print(f"Shutdown cleanup error: {e}")
+
+        QApplication.quit()
+        event.accept()
+
+    def closeEvent(self, event):
+        """
+        Clean application shutdown.
+
+        Prevents orphaned background processes that can
+        leave COM ports locked after the GUI closes.
+        """
+
+        print("APPLICATION SHUTDOWN")
+
+        try:
+
+            # Stop timers.
+            if hasattr(self, "monitor_timer"):
+                self.monitor_timer.stop()
+
+            if hasattr(self, "status_timer"):
+                self.status_timer.stop()
+
+            # Save session state.
+            if hasattr(self, "save_session"):
+                self.save_session()
+
+            # Close floating radio windows.
+            if hasattr(self, "radio_windows"):
+                for window in list(self.radio_windows):
+                    try:
+                        window.close()
+                    except Exception as e:
+                        print(f"Radio window close error: {e}")
+
+            # Close Output Manager window.
+            if hasattr(self, "output_manager_window"):
+                if self.output_manager_window is not None:
+                    try:
+                        self.output_manager_window.close()
+                    except Exception as e:
+                        print(f"Output Manager close error: {e}")
+
+            # Disconnect serial link.
+            if hasattr(self, "link"):
+                self.link.disconnect()
+
+            elif hasattr(self, "serial"):
+                self.serial.disconnect()
+
+        except Exception as e:
+            print(f"Shutdown cleanup error: {e}")
+
+        QApplication.quit()
+
+        event.accept()
