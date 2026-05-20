@@ -92,6 +92,40 @@ The system is intended for:
 
 ---
 
+# Hardware Architecture
+
+The SI5351 Multi-Radio VFO platform is a USB-powered RF synthesis and control system intended for vintage radio experimentation and multi-radio frequency generation.
+
+The platform provides:
+
+- Multi-output SI5351 RF synthesis
+- TCA9548A I2C expansion
+- Independent RF outputs
+- PTT awareness inputs
+- USB PC control through Arduino Nano
+- Radio-profile-based frequency translation
+
+The platform intentionally excludes radio-specific RF conditioning hardware.
+
+External modules provide:
+
+- RF buffering
+- filtering
+- level conversion
+- radio-specific drive adaptation
+
+## Hardware Architecture Schematic
+
+![Hardware Architecture](hardware/kicad/SI5351_Multi_Radio_VFO_Hardware/docs/schematics/SI5351_VFO_HW_v0_9_ARCHITECTURE_STABLE.svg)
+
+## Architecture Notes
+
+- USB power is distributed through the Arduino Nano 5V rail
+- SI5351 modules are isolated through the TCA9548A I2C multiplexer
+- RF outputs are intended for rear-panel BNC connectors
+- PTT inputs are intended for rear-panel RCA connectors
+- RF buffering/filtering is intentionally external to the platform
+
 # Screenshots
 
 ## Main Window

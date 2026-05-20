@@ -1,0 +1,4 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "project_symbols") (type "KiCad") (uri "C:/Users/john/Documents/GitHub/SI5351-Multi-Radio-VFO/hardware/kicad/project_symbols.kicad_sym") (options "") (descr ""))
+)

@@ -1,0 +1,109 @@
+Current Stable Recovery State
+
+Running:
+
+python main.py
+
+works correctly after killing orphaned EXE instances using:
+
+taskkill /F /IM SI5351_Multi_Radio_VFO.exe
+
+COM6 then opens normally.
+
+Root Cause Identified
+
+The packaged executable:
+
+SI5351_Multi_Radio_VFO.exe
+
+is leaving background/orphaned processes alive after the GUI window closes.
+
+Those hidden EXE processes continue holding:
+
+COM5/COM6
+CH340 serial handle
+
+which causes:
+
+PermissionError(13, 'Access is denied.')
+
+The problem is NOT:
+
+Arduino IDE
+Windows reboot
+COM reassignment
+pyserial duplicate opens
+Confirmed Diagnostic Findings
+Verified
+Serial open attempted only ONCE
+CONNECT CALLED appeared once
+SERIAL OPEN SUCCESS missing during failure
+
+pyserial exception:
+
+Access is denied
+
+Task Manager showed:
+
+SI5351_Multi_Radio_VFO.exe (2)
+Killing those EXEs immediately released COM6
+Immediate Engineering Priority
+
+Next session:
+implement robust shutdown architecture BEFORE continuing installer/deployment work.
+
+Required Fixes Next Session
+1. MainWindow.closeEvent()
+
+Add cleanup for:
+
+monitor timers
+radio windows
+Output Manager
+serial disconnect
+session save
+
+Recommended structure already provided.
+
+2. QApplication Shutdown
+
+In main.py ensure:
+
+app.setQuitOnLastWindowClosed(True)
+
+and proper:
+
+sys.exit(app.exec())
+3. Verify Process Termination
+
+After closing GUI:
+
+python.exe must disappear
+packaged EXE must disappear
+no lingering background process allowed
+4. Later Improvement
+
+Add single-instance protection:
+
+mutex/lock file
+prevent second EXE launch
+prevent COM lock conflicts
+Current Freeze Recommendation
+
+New engineering checkpoint:
+
+SI5351_VFO_PC_v4D6F_COM_PORT_PROCESS_LEAK_DIAGNOSED
+
+Meaning:
+
+COM lock issue root-caused
+orphaned EXE process behavior identified
+serial architecture verified single-open
+shutdown architecture pending repair
+Tomorrow's Recommended Order
+Implement closeEvent() cleanup
+Verify no lingering EXE/python processes
+Test COM reconnect reliability
+Test packaged EXE shutdown behavior
+Resume README modernization/screenshots
+Continue installer/deployment phase

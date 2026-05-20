@@ -1,0 +1,1 @@
+Continue from SI5351_VFO_PC_v4D6E_WINDOWS_INSTALLER_DEPLOYMENT_STABLE with About dialog integrated and begin README modernization/screenshots phase.

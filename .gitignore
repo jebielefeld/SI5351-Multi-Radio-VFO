@@ -214,3 +214,8 @@ Desktop.ini
 *.tmp
 *.bak
 New Text Document.txt
+# KiCad local history
+.history/
+
+# KiCad lock files
+*.lck
