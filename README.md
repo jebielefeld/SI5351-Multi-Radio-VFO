@@ -92,6 +92,21 @@ The system is intended for:
 
 ---
 
+## System Wiring Overview
+
+The following diagram shows the current SI5351 Multi-Radio VFO hardware architecture using:
+
+* Arduino Nano
+* TCA9548A I2C multiplexer
+* Dual Adafruit SI5351 modules
+* Six RF outputs
+* Six PTT sense inputs
+
+
+![System Wiring Overview](docs/wiring/System_Wiring_Overview_v1.PNG)
+
+
+
 # Hardware Architecture
 
 The SI5351 Multi-Radio VFO platform is a USB-powered RF synthesis and control system intended for vintage radio experimentation and multi-radio frequency generation.
