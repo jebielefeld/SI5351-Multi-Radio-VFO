@@ -387,6 +387,13 @@ Future expansion areas:
 
 ---
 
+## Developer Documentation
+
+* [PC Software Architecture](pc_software/ARCHITECTURE.md)
+
+
+---
+
 # Screenshots
 
 ## Main Window
