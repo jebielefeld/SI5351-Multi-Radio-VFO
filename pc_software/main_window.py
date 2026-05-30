@@ -8,6 +8,11 @@
 #   - Operator-facing output labels are Output 1 through Output 6.
 #   - Internal firmware protocol remains OUT0 through OUT5.
 
+import json
+import subprocess
+import sys
+from pathlib import Path
+
 from tkinter import dialog
 
 from PySide6.QtWidgets import (
@@ -29,7 +34,7 @@ from PySide6.QtCore import Qt, QEvent, QTimer
 from serial_link import SerialLink
 from cat_radio import CatRadio
 from config import MIN_FREQ_HZ, MAX_FREQ_HZ, DEFAULT_BAUD
-from radio_math import calculate_output_frequency
+from radio_maths import calculate_output_frequency
 from radio_window import RadioControlWindow
 from output_manager import (
     OutputManager,
@@ -42,6 +47,8 @@ from output_manager_window import OutputManagerWindow
 from session_manager import SessionManager
 from app_settings import AppSettings
 from about_dialog import AboutDialog
+from help_window import HelpWindow
+from calibration_window import CalibrationWindow
 
 
 class MainWindow(QMainWindow):
@@ -49,7 +56,15 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("Nano Si5351A Ham Radio VFO - Main Controller")
-        self.resize(750, 420)
+
+        # Main window is intentionally kept narrower than early development builds.
+        # The top controls are split into two rows so the program feels more like
+        # a bench RF instrument and less like a wide engineering dashboard.
+        self.normal_width = 690
+        self.normal_height = 485
+        self.monitor_height = 610
+
+        self.resize(self.normal_width, self.normal_height)
 
         self.link = SerialLink()
         self.link.add_callback(self.debug_serial)
@@ -57,6 +72,9 @@ class MainWindow(QMainWindow):
 
         self.output_manager = OutputManager()
         self.output_manager_window = None
+        self.profile_editor_process = None
+        self.help_window = None
+        self.calibration_window = None
         self.output_manager.conflict_detected.connect(self.log_message)
         self.session_manager = SessionManager()
         self.app_settings = AppSettings()
@@ -118,20 +136,38 @@ class MainWindow(QMainWindow):
         central.setAttribute(Qt.WA_StyledBackground, True)
         self.setCentralWidget(central)
         main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(6, 6, 6, 6)
+        main_layout.setSpacing(5)
         central.setLayout(main_layout)
 
-        port_row = QHBoxLayout()
-        self.port_label = QLabel("COM Port:")
+        #
+        # Top controls are split into two rows.
+        #
+        # Row 1: operating/session controls.
+        # Row 2: tools/utility controls.
+        #
+
+        control_row = QHBoxLayout()
+        control_row.setContentsMargins(0, 0, 0, 0)
+        control_row.setSpacing(4)
+
+        self.port_label = QLabel("COM:")
         self.port_combo = QComboBox()
-        self.refresh_button = QPushButton("Refresh Ports")
+        self.port_combo.setFixedWidth(95)
+        self.refresh_button = QPushButton("Refresh")
         self.connect_button = QPushButton("Connect")
         self.disconnect_button = QPushButton("Disconnect")
-        self.new_window_button = QPushButton("New Radio Window")
-        self.output_manager_button = QPushButton("Output Manager")
-        self.save_session_button = QPushButton("Save Session")
-        self.load_session_button = QPushButton("Load Session")
-        self.arrange_windows_button = QPushButton("Arrange Windows")
+        self.new_window_button = QPushButton("New Radio")
+        self.output_manager_button = QPushButton("Outputs")
+        self.save_session_button = QPushButton("Save")
+        self.load_session_button = QPushButton("Load")
+        self.arrange_windows_button = QPushButton("Arrange")
+
+        self.profile_editor_button = QPushButton("Profiles")
+        self.reload_profiles_button = QPushButton("Reload")
         self.monitor_button = QPushButton("Monitor OFF")
+        self.calibration_button = QPushButton("Calibration")
+        self.help_button = QPushButton("Help")
         self.about_button = QPushButton("About")
 
         self.refresh_button.clicked.connect(self.refresh_ports)
@@ -139,33 +175,56 @@ class MainWindow(QMainWindow):
         self.disconnect_button.clicked.connect(self.disconnect_radio)
         self.new_window_button.clicked.connect(self.open_radio_window)
         self.output_manager_button.clicked.connect(self.show_output_manager)
+        self.profile_editor_button.clicked.connect(self.open_profile_editor)
+        self.reload_profiles_button.clicked.connect(self.reload_profiles_from_disk)
         self.save_session_button.clicked.connect(self.save_session_profile)
         self.load_session_button.clicked.connect(self.load_session_profile)
         self.arrange_windows_button.clicked.connect(self.arrange_radio_windows)
         self.monitor_button.clicked.connect(self.toggle_monitor)
+        self.calibration_button.clicked.connect(self.show_calibration_window)
+        self.help_button.clicked.connect(self.show_help_window)
         self.about_button.clicked.connect(self.show_about_dialog)
 
-        port_row.addWidget(self.port_label)
-        port_row.addWidget(self.port_combo)
-        port_row.addWidget(self.refresh_button)
-        port_row.addWidget(self.connect_button)
-        port_row.addWidget(self.disconnect_button)
-        port_row.addWidget(self.new_window_button)
-        port_row.addWidget(self.output_manager_button)
-        port_row.addWidget(self.save_session_button)
-        port_row.addWidget(self.load_session_button)
-        port_row.addWidget(self.arrange_windows_button)
-        port_row.addWidget(self.monitor_button)
-        port_row.addWidget(self.about_button)
-        main_layout.addLayout(port_row)
+        control_row.addWidget(self.port_label)
+        control_row.addWidget(self.port_combo)
+        control_row.addWidget(self.refresh_button)
+        control_row.addWidget(self.connect_button)
+        control_row.addWidget(self.disconnect_button)
+        control_row.addWidget(self.new_window_button)
+        control_row.addWidget(self.output_manager_button)
+        control_row.addWidget(self.arrange_windows_button)
+        control_row.addStretch()
+
+        main_layout.addLayout(control_row)
+
+        tool_row = QHBoxLayout()
+        tool_row.setContentsMargins(0, 0, 0, 0)
+        tool_row.setSpacing(4)
+
+        tool_row.addWidget(self.monitor_button)
+        tool_row.addWidget(self.calibration_button)
+        tool_row.addWidget(self.reload_profiles_button)
+        tool_row.addWidget(self.profile_editor_button)
+        tool_row.addWidget(self.save_session_button)
+        tool_row.addWidget(self.load_session_button)
+        tool_row.addWidget(self.help_button)
+        tool_row.addWidget(self.about_button)
+        tool_row.addStretch()
+
+        main_layout.addLayout(tool_row)
 
         radio_row = QHBoxLayout()
-        self.radio_label = QLabel("Radio 1:")
+        radio_row.setContentsMargins(0, 0, 0, 0)
+        radio_row.setSpacing(5)
+        self.radio_label = QLabel("Radio:")
         self.band_label = QLabel("Band:")
         self.output_label = QLabel("Output:")
         self.radio_combo = QComboBox()
+        self.radio_combo.setMinimumWidth(220)
         self.band_combo = QComboBox()
+        self.band_combo.setMinimumWidth(95)
         self.clock_combo = QComboBox()
+        self.clock_combo.setMinimumWidth(110)
         self.populate_output_combo(self.clock_combo)
 
         self.radio_combo.currentIndexChanged.connect(self.on_radio_changed)
@@ -241,6 +300,8 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.vfo_display)
 
         freq_row = QHBoxLayout()
+        freq_row.setContentsMargins(0, 0, 0, 0)
+        freq_row.setSpacing(5)
         self.freq_entry = QLineEdit()
         self.freq_entry.setPlaceholderText(
             "Examples: 7.100 | 7100 | 7100000 | 14.250 MHz"
@@ -256,6 +317,8 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(freq_row)
 
         rf_row = QHBoxLayout()
+        rf_row.setContentsMargins(0, 0, 0, 0)
+        rf_row.setSpacing(5)
         self.rf_on_button = QPushButton("RF ON")
         self.rf_off_button = QPushButton("RF OFF")
         self.spot_button = QPushButton("SPOT OFF")
@@ -322,6 +385,118 @@ class MainWindow(QMainWindow):
             self.radio_combo.setCurrentIndex(0)
 
         self.schedule_auto_restore()
+
+    def load_profiles_from_file(self):
+        profile_path = Path(__file__).with_name("radio_profiles.json")
+
+        if not profile_path.exists():
+            raise FileNotFoundError(f"Could not find {profile_path}")
+
+        with open(profile_path, "r", encoding="utf-8") as f:
+            raw_data = json.load(f)
+
+        if isinstance(raw_data, dict) and "profiles" in raw_data:
+            raw_profiles = raw_data["profiles"]
+        else:
+            raw_profiles = raw_data
+
+        loaded_profiles = []
+
+        if isinstance(raw_profiles, list):
+            for profile in raw_profiles:
+                if isinstance(profile, dict):
+                    loaded_profiles.append(profile)
+
+        elif isinstance(raw_profiles, dict):
+            for profile_id, profile in raw_profiles.items():
+                if isinstance(profile, dict):
+                    if "id" not in profile:
+                        profile = dict(profile)
+                        profile["id"] = profile_id
+                    loaded_profiles.append(profile)
+
+        else:
+            raise ValueError(
+                "radio_profiles.json does not contain a valid profile list"
+            )
+
+        return loaded_profiles
+
+    def reload_profiles_from_disk(self):
+        try:
+            previous_profile_id = None
+            previous_profile_name = ""
+            previous_band_id = self.current_band_id
+
+            if self.current_profile:
+                previous_profile_id = self.current_profile.get("id")
+                previous_profile_name = self.current_profile.get("display_name", "")
+
+            loaded_profiles = self.load_profiles_from_file()
+
+            if not loaded_profiles:
+                QMessageBox.warning(
+                    self,
+                    "Reload Profiles",
+                    "No profiles were found in radio_profiles.json.",
+                )
+                return
+
+            # Keep the same list object so existing floating windows that hold
+            # a reference to self.profiles see the updated profile table too.
+            self.profiles.clear()
+            self.profiles.extend(loaded_profiles)
+
+            self.radio_combo.blockSignals(True)
+            self.radio_combo.clear()
+            for profile in self.profiles:
+                self.radio_combo.addItem(
+                    profile.get("display_name", "Unnamed Radio"), profile
+                )
+            self.radio_combo.blockSignals(False)
+
+            row_to_select = 0
+            for row in range(self.radio_combo.count()):
+                profile = self.radio_combo.itemData(row)
+                if not profile:
+                    continue
+                if previous_profile_id and profile.get("id") == previous_profile_id:
+                    row_to_select = row
+                    break
+                if (
+                    previous_profile_name
+                    and profile.get("display_name") == previous_profile_name
+                ):
+                    row_to_select = row
+                    break
+
+            self.radio_combo.setCurrentIndex(row_to_select)
+            self.current_profile = self.radio_combo.currentData()
+            self.update_band_list()
+
+            if previous_band_id:
+                band_row = self.find_band_index_by_id(previous_band_id)
+                if band_row >= 0:
+                    self.band_combo.setCurrentIndex(band_row)
+
+            self.update_compact_identity()
+            self.update_output_manager_state()
+
+            if self.output_manager_window is not None:
+                try:
+                    self.output_manager_window.refresh()
+                except Exception:
+                    pass
+
+            self.log_message(f"Reloaded {len(self.profiles)} radio profiles from disk")
+
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                "Reload Profiles Failed",
+                str(e),
+            )
+            self.log_message(f"Reload profiles error: {e}")
 
     def on_radio_changed(self, *_):
         self.current_profile = self.radio_combo.currentData()
@@ -641,11 +816,26 @@ class MainWindow(QMainWindow):
         if desired_compact != self.compact_mode:
             self.toggle_compact()
 
+        #
+        # Restore position, but do NOT restore old wide development-era size.
+        #
+        # Earlier session files may contain a very wide main-window geometry.
+        # The v9B/v9C main window uses a narrower two-row toolbar layout, so
+        # restoring the old saved width defeats the new ergonomic design.
+        #
+        # Keep the saved screen position, then force the current intended size.
+        #
+
         x = int(state.get("x", self.x()))
         y = int(state.get("y", self.y()))
-        w = int(state.get("w", self.width()))
-        h = int(state.get("h", self.height()))
-        self.setGeometry(x, y, w, h)
+
+        if self.compact_mode:
+            self.setGeometry(x, y, 390, 245)
+        else:
+            target_height = (
+                self.monitor_height if self.monitor_visible else self.normal_height
+            )
+            self.setGeometry(x, y, self.normal_width, target_height)
 
     def apply_session_state(self, data):
         """
@@ -830,7 +1020,7 @@ class MainWindow(QMainWindow):
             if self.compact_mode:
                 main_w, main_h = 390, 245
             else:
-                main_w, main_h = 760, 430
+                main_w, main_h = self.normal_width, self.normal_height
 
             self.setGeometry(x0, y0, main_w, main_h)
 
@@ -914,9 +1104,82 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.log_message(f"Focus window error: {e}")
 
+    def show_calibration_window(self):
+        if self.calibration_window is None:
+            self.calibration_window = CalibrationWindow(self)
+
+        self.calibration_window.show()
+        self.calibration_window.raise_()
+        self.calibration_window.activateWindow()
+
+    def show_help_window(self):
+        if self.help_window is None:
+            self.help_window = HelpWindow(self)
+
+        self.help_window.show()
+        self.help_window.raise_()
+        self.help_window.activateWindow()
+
     def show_about_dialog(self):
         dialog = AboutDialog(self)
         dialog.exec()
+
+    def open_profile_editor(self):
+        """
+        Launch the Radio Profile Editor as a separate non-blocking process.
+
+        Source mode:
+            Starts profile_editor.py with the current Python interpreter.
+
+        PyInstaller EXE mode:
+            Starts this same EXE with --profile-editor. This avoids Windows
+            trying to open profile_editor.py as a text/source file and keeps
+            the packaged application self-contained.
+        """
+        try:
+            if (
+                self.profile_editor_process is not None
+                and self.profile_editor_process.poll() is None
+            ):
+                self.log_message("Profile Editor is already running")
+                return
+
+            if getattr(sys, "frozen", False):
+                exe_path = Path(sys.executable).resolve()
+                work_dir = exe_path.parent / "_internal"
+
+                if not work_dir.exists():
+                    work_dir = exe_path.parent
+
+                self.profile_editor_process = subprocess.Popen(
+                    [str(exe_path), "--profile-editor"],
+                    cwd=str(work_dir),
+                )
+            else:
+                editor_path = Path(__file__).with_name("profile_editor.py")
+
+                if not editor_path.exists():
+                    QMessageBox.warning(
+                        self,
+                        "Profile Editor Not Found",
+                        f"Could not find:\n\n{editor_path}",
+                    )
+                    return
+
+                self.profile_editor_process = subprocess.Popen(
+                    [sys.executable, str(editor_path)],
+                    cwd=str(editor_path.parent),
+                )
+
+            self.log_message("Opened Radio Profile Editor")
+
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                "Profile Editor Launch Failed",
+                str(e),
+            )
+            self.log_message(f"Profile Editor launch error: {e}")
 
     def show_output_manager(self):
         if self.output_manager_window is None:
@@ -1104,6 +1367,10 @@ class MainWindow(QMainWindow):
 
         self.new_window_button.setEnabled(True)
         self.output_manager_button.setEnabled(True)
+        self.profile_editor_button.setEnabled(True)
+        self.calibration_button.setEnabled(True)
+        self.help_button.setEnabled(True)
+        self.about_button.setEnabled(True)
         self.save_session_button.setEnabled(True)
         self.load_session_button.setEnabled(True)
         self.arrange_windows_button.setEnabled(True)
@@ -1139,10 +1406,10 @@ class MainWindow(QMainWindow):
         self.log.setVisible(self.monitor_visible)
         if self.monitor_visible:
             self.monitor_button.setText("Monitor ON")
-            self.resize(750, 560)
+            self.resize(self.normal_width, self.monitor_height)
         else:
             self.monitor_button.setText("Monitor OFF")
-            self.resize(750, 420)
+            self.resize(self.normal_width, self.normal_height)
 
     def toggle_compact(self):
         self.compact_mode = not self.compact_mode
@@ -1159,10 +1426,17 @@ class MainWindow(QMainWindow):
             self.refresh_button.setVisible(False)
             self.connect_button.setVisible(False)
             self.disconnect_button.setVisible(False)
+            self.new_window_button.setVisible(False)
+            self.output_manager_button.setVisible(False)
             self.save_session_button.setVisible(False)
             self.load_session_button.setVisible(False)
             self.arrange_windows_button.setVisible(False)
             self.monitor_button.setVisible(False)
+            self.calibration_button.setVisible(False)
+            self.reload_profiles_button.setVisible(False)
+            self.profile_editor_button.setVisible(False)
+            self.help_button.setVisible(False)
+            self.about_button.setVisible(False)
 
             self.radio_label.setVisible(False)
             self.radio_combo.setVisible(False)
@@ -1193,10 +1467,17 @@ class MainWindow(QMainWindow):
             self.refresh_button.setVisible(True)
             self.connect_button.setVisible(True)
             self.disconnect_button.setVisible(True)
+            self.new_window_button.setVisible(True)
+            self.output_manager_button.setVisible(True)
             self.save_session_button.setVisible(True)
             self.load_session_button.setVisible(True)
             self.arrange_windows_button.setVisible(True)
             self.monitor_button.setVisible(True)
+            self.calibration_button.setVisible(True)
+            self.reload_profiles_button.setVisible(True)
+            self.profile_editor_button.setVisible(True)
+            self.help_button.setVisible(True)
+            self.about_button.setVisible(True)
 
             self.radio_label.setVisible(True)
             self.radio_combo.setVisible(True)
@@ -1215,7 +1496,10 @@ class MainWindow(QMainWindow):
             self.cal_button.setVisible(True)
 
             self.log.setVisible(self.monitor_visible)
-            self.resize(750, 560 if self.monitor_visible else 420)
+            self.resize(
+                self.normal_width,
+                self.monitor_height if self.monitor_visible else self.normal_height,
+            )
 
     def update_output_color_label(self):
         try:
@@ -1825,6 +2109,22 @@ class MainWindow(QMainWindow):
                         window.close()
                     except Exception as e:
                         print(f"Radio window close error: {e}")
+
+            # Close Calibration window.
+            if hasattr(self, "calibration_window"):
+                if self.calibration_window is not None:
+                    try:
+                        self.calibration_window.close()
+                    except Exception as e:
+                        print(f"Calibration window close error: {e}")
+
+            # Close Help window.
+            if hasattr(self, "help_window"):
+                if self.help_window is not None:
+                    try:
+                        self.help_window.close()
+                    except Exception as e:
+                        print(f"Help window close error: {e}")
 
             # Close Output Manager window.
             if hasattr(self, "output_manager_window"):

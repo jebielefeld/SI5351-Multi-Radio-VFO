@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QEvent, QTimer
 
 from config import MIN_FREQ_HZ, MAX_FREQ_HZ
-from radio_math import calculate_output_frequency
+from radio_maths import calculate_output_frequency
 from output_manager import (
     index_to_output_name,
     output_name_to_user_label,
@@ -87,7 +87,9 @@ class RadioControlWindow(QWidget):
                 self.window_name,
             )
 
-        self.setWindowTitle(f"{self.window_name} - {output_name_to_user_label(self.current_clock)}")
+        self.setWindowTitle(
+            f"{self.window_name} - {output_name_to_user_label(self.current_clock)}"
+        )
         self.resize(560, 360)
 
         self.build_ui()
@@ -200,7 +202,10 @@ class RadioControlWindow(QWidget):
     def populate_output_combo(self, combo):
         combo.clear()
         for i in range(6):
-            combo.addItem(output_name_to_user_label(index_to_output_name(i)), index_to_output_name(i))
+            combo.addItem(
+                output_name_to_user_label(index_to_output_name(i)),
+                index_to_output_name(i),
+            )
 
     def combo_current_output(self, combo):
         data = combo.currentData()
@@ -461,7 +466,6 @@ class RadioControlWindow(QWidget):
             self.resize(560, 360)
             self.freq_display.setFocus()
 
-
     def set_active_visual(self, active):
         """
         Apply active/inactive styling to this floating radio window.
@@ -473,19 +477,14 @@ class RadioControlWindow(QWidget):
         self.setAttribute(Qt.WA_StyledBackground, True)
 
         if active:
-            self.setStyleSheet(
-                "#radioWindowFrame { border: 4px solid #E69F00; }"
-            )
+            self.setStyleSheet("#radioWindowFrame { border: 4px solid #E69F00; }")
         else:
-            self.setStyleSheet(
-                "#radioWindowFrame { border: 1px solid #BBBBBB; }"
-            )
+            self.setStyleSheet("#radioWindowFrame { border: 1px solid #BBBBBB; }")
 
     def mousePressEvent(self, event):
         if hasattr(self.controller, "set_active_window"):
             self.controller.set_active_window(self.window_id)
         super().mousePressEvent(event)
-
 
     def handle_ptt_event(self, is_tx):
         if is_tx:
@@ -719,7 +718,6 @@ class RadioControlWindow(QWidget):
                 f"{self.current_clock} Step: {self.format_step()}"
             )
 
-
     def find_radio_index_by_name(self, display_name):
         for i in range(self.radio_combo.count()):
             profile = self.radio_combo.itemData(i)
@@ -821,8 +819,6 @@ class RadioControlWindow(QWidget):
         if hasattr(self.controller, "clamp_widget_to_visible_screen"):
             self.controller.clamp_widget_to_visible_screen(self)
 
-
-
     def restore_from_accidental_maximize(self):
         """
         Restore this floating radio window if Windows Snap/Aero Snap maximized it.
@@ -857,7 +853,6 @@ class RadioControlWindow(QWidget):
             QTimer.singleShot(0, self.restore_from_accidental_maximize)
 
         super().changeEvent(event)
-
 
     def closeEvent(self, event):
         try:
