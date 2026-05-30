@@ -55,6 +55,67 @@ Validated:
 
 ---
 
+# Downloads
+
+## Latest Public Release
+
+The latest installer package and printable PDF User Manual are available from the GitHub Releases page:
+
+[Download Latest Release](../../releases/latest)
+
+Included release assets:
+
+* Windows Installer EXE
+* Printable PDF User Manual
+* Source Code Archives
+
+Current stable release:
+
+```text id="c1p4za"
+SI5351 Multi-Radio VFO v6.0
+```
+
+---
+
+# Windows SmartScreen Notice
+
+Because this project is independently developed open-source software, Windows SmartScreen or Microsoft Edge may display a warning such as:
+
+```text id="9tz6cw"
+"This app isn't commonly downloaded"
+```
+
+This is normal for newly released independent software that does not yet have widespread Microsoft reputation data or commercial code-signing certificates.
+
+The installer is:
+
+* open-source
+* publicly auditable on GitHub
+* distributed directly from this repository
+* built from the included source code
+
+Typical user workflow:
+
+1. Download the installer from the official GitHub Releases page.
+2. If SmartScreen appears:
+
+   * click `More info`
+   * then click `Run anyway`
+  
+   * OR
+
+* Click:  '...'
+* or Keep
+* then:
+* Keep anyway
+* or More info → Run anyway
+
+* Depending on browser/version.
+
+As more users download and use the installer, Microsoft reputation scoring typically improves over time.
+
+---
+
 # Major Features
 
 ## Multi-Radio Architecture
