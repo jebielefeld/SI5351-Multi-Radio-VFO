@@ -219,3 +219,5 @@ New Text Document.txt
 
 # KiCad lock files
 *.lck
+
+~$*.pptx

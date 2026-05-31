@@ -385,6 +385,23 @@ Future expansion areas:
 * RF amplifier modules
 * additional synthesizer boards
 
+## Documentation
+
+### User Documentation
+
+* [Printable User Manual PDF](docs/User_Manual_v1.pdf)
+* [User Manual Markdown Source](docs/User_Manual_v1.md)
+
+### Hardware Documentation
+
+* [System Wiring Overview PDF](docs/wiring/System_Wiring_Overview_v1.pdf)
+* [System Wiring Overview PowerPoint](docs/wiring/System_Wiring_Overview_v1.pptx)
+
+### Developer Documentation
+
+* [PC Software Architecture](pc_software/ARCHITECTURE.md)
+
+
 ---
 
 ## Developer Documentation
