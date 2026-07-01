@@ -23,7 +23,13 @@ const byte OUT_COUNT = 6;
 const byte CLK_PER_BOARD = 3;
 
 const uint32_t FREQ_MIN_HZ = 1800000UL;
-const uint32_t FREQ_MAX_HZ = 54000000UL;
+
+// Maximum frequency the user is allowed to request
+const uint32_t USER_MAX_HZ = 60000000UL;
+
+// Maximum frequency the SI5351 is allowed to generate after calibration
+const uint32_t HW_MAX_HZ   = 60100000UL;
+
 const uint32_t PLL_HZ = 900000000UL;
 
 // ------------------------------------------------------------
@@ -178,7 +184,8 @@ void loadSettingsFromEEPROM() {
   }
 
   for (byte i = 0; i < OUT_COUNT; i++) {
-    if (saved.freq_hz[i] >= FREQ_MIN_HZ && saved.freq_hz[i] <= FREQ_MAX_HZ) {
+  if (saved.freq_hz[i] >= FREQ_MIN_HZ && saved.freq_hz[i] <= USER_MAX_HZ)
+    {
       radio.freq_hz[i] = saved.freq_hz[i];
     }
   }
@@ -239,7 +246,7 @@ void forceAllOutputsOff() {
 bool setOutputFrequency(byte out, uint32_t freq_hz) {
   if (out >= OUT_COUNT) return false;
 
-  if (freq_hz < FREQ_MIN_HZ || freq_hz > FREQ_MAX_HZ) {
+  if (freq_hz < FREQ_MIN_HZ || freq_hz > USER_MAX_HZ) {
     return false;
   }
 
@@ -247,7 +254,7 @@ bool setOutputFrequency(byte out, uint32_t freq_hz) {
     (int64_t)freq_hz +
     ((int64_t)freq_hz * (int64_t)radio.cal_ppb) / 1000000000LL;
 
-  if (corrected < FREQ_MIN_HZ || corrected > FREQ_MAX_HZ) {
+  if (corrected < FREQ_MIN_HZ || corrected > HW_MAX_HZ) {
     return false;
   }
 
