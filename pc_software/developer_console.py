@@ -10,8 +10,10 @@ from PySide6.QtWidgets import (
 
 
 class DeveloperConsole(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, link, parent=None):
         super().__init__(parent)
+
+        self.link = link
 
         self.setWindowTitle("Developer Console")
         self.resize(700, 450)
@@ -48,9 +50,10 @@ class DeveloperConsole(QDialog):
         self.clear_button.clicked.connect(self.log_box.clear)
         self.close_button.clicked.connect(self.close)
 
-        self.append_log("Developer Console Phase 1")
-        self.append_log("Serial connection not active yet.")
-        self.append_log("This window is currently a GUI framework test.\n")
+        self.append_log("SI5351 Multi-Radio VFO Developer Console")
+        self.append_log("Engineering Interface Ready")
+        self.append_log("-" * 60)
+        self.append_log("")
 
     def send_command(self):
         command = self.command_entry.text().strip()
@@ -58,8 +61,29 @@ class DeveloperConsole(QDialog):
         if not command:
             return
 
-        self.append_log(f"> {command}")
-        self.append_log("Placeholder only — serial send not connected yet.\n")
+        if not command.endswith(";"):
+            command += ";"
+
+        self.append_log(f"TX> {command}")
+
+        try:
+            if not self.link.is_connected():
+                self.append_log("< ERROR: Serial port is not connected\n")
+                self.command_entry.clear()
+                return
+
+            response = self.link.query(command)
+
+            if response:
+                self.append_log(f"RX< {response}")
+                self.append_log("")
+            else:
+                self.append_log("RX< No response")
+                self.append_log("")
+
+        except Exception as e:
+            self.append_log(f"RX< ERROR: {e}")
+            self.append_log("")
 
         self.command_entry.clear()
 

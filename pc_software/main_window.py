@@ -1117,7 +1117,7 @@ class MainWindow(QMainWindow):
         self.calibration_window.activateWindow()
 
     def show_developer_console(self):
-        self.developer_console = DeveloperConsole(self)
+        self.developer_console = DeveloperConsole(self.link, self)
         self.developer_console.show()
 
     def show_help_window(self):
