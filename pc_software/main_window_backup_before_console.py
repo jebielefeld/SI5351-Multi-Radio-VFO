@@ -49,7 +49,6 @@ from app_settings import AppSettings
 from about_dialog import AboutDialog
 from help_window import HelpWindow
 from calibration_window import CalibrationWindow
-from developer_console import DeveloperConsole
 
 
 class MainWindow(QMainWindow):
@@ -168,7 +167,6 @@ class MainWindow(QMainWindow):
         self.reload_profiles_button = QPushButton("Reload")
         self.monitor_button = QPushButton("Monitor OFF")
         self.calibration_button = QPushButton("Calibration")
-        self.developer_console_button = QPushButton("Dev Console")
         self.help_button = QPushButton("Help")
         self.about_button = QPushButton("About")
 
@@ -184,7 +182,6 @@ class MainWindow(QMainWindow):
         self.arrange_windows_button.clicked.connect(self.arrange_radio_windows)
         self.monitor_button.clicked.connect(self.toggle_monitor)
         self.calibration_button.clicked.connect(self.show_calibration_window)
-        self.developer_console_button.clicked.connect(self.show_developer_console)
         self.help_button.clicked.connect(self.show_help_window)
         self.about_button.clicked.connect(self.show_about_dialog)
 
@@ -206,7 +203,6 @@ class MainWindow(QMainWindow):
 
         tool_row.addWidget(self.monitor_button)
         tool_row.addWidget(self.calibration_button)
-        tool_row.addWidget(self.developer_console_button)
         tool_row.addWidget(self.reload_profiles_button)
         tool_row.addWidget(self.profile_editor_button)
         tool_row.addWidget(self.save_session_button)
@@ -1115,10 +1111,6 @@ class MainWindow(QMainWindow):
         self.calibration_window.show()
         self.calibration_window.raise_()
         self.calibration_window.activateWindow()
-
-    def show_developer_console(self):
-        self.developer_console = DeveloperConsole(self)
-        self.developer_console.show()
 
     def show_help_window(self):
         if self.help_window is None:
