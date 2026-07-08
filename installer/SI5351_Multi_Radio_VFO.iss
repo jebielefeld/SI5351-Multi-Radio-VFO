@@ -1,6 +1,6 @@
 #define MyAppName "SI5351 Multi-Radio VFO"
-#define MyAppVersion "6.0"
-#define MyAppPublisher "John Bielefeld"
+#define MyAppVersion "6.1d"
+#define MyAppPublisher "John Bielefeld K1JEB"
 #define MyAppExeName "SI5351_Multi_Radio_VFO.exe"
 
 [Setup]
@@ -12,7 +12,7 @@ DefaultDirName={autopf}\SI5351 Multi-Radio VFO
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=..\installer_output
-OutputBaseFilename=SI5351_Multi_Radio_VFO_Setup
+OutputBaseFilename=SI5351_Multi_Radio_VFO_Setup_v6_1d
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -31,7 +31,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
 
 [Files]
-Source: "..\pc_software\dist\SI5351_Multi_Radio_VFO\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\pc_software\dist\SI5351_Multi_Radio_VFO.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [InstallDelete]
 Type: filesandordirs; Name: "{app}"

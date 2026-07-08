@@ -88,11 +88,9 @@
 ###########################################################################
 
 import json
-import subprocess
-import sys
+
 from pathlib import Path
 
-from tkinter import dialog
 
 from PySide6.QtWidgets import (
     QMainWindow,
@@ -129,6 +127,7 @@ from about_dialog import AboutDialog
 from help_window import HelpWindow
 from calibration_window import CalibrationWindow
 from developer_console import DeveloperConsole
+from profile_editor import ProfileEditorWindow
 
 
 class MainWindow(QMainWindow):
@@ -167,7 +166,7 @@ class MainWindow(QMainWindow):
 
         self.output_manager = OutputManager()
         self.output_manager_window = None
-        self.profile_editor_process = None
+        self.profile_editor_window = None
         self.help_window = None
         self.calibration_window = None
         self.output_manager.conflict_detected.connect(self.log_message)
@@ -1340,50 +1339,17 @@ class MainWindow(QMainWindow):
 
     def open_profile_editor(self):
         """
-        Launch the Radio Profile Editor as a separate non-blocking process.
+        Open or raise the Radio Profile Editor inside the current application.
 
-        Source mode:
-            Starts profile_editor.py with the current Python interpreter.
-
-        PyInstaller EXE mode:
-            Starts this same EXE with --profile-editor. This avoids Windows
-            trying to open profile_editor.py as a text/source file and keeps
-            the packaged application self-contained.
+        This avoids launching a second copy of the PyInstaller EXE.
         """
         try:
-            if (
-                self.profile_editor_process is not None
-                and self.profile_editor_process.poll() is None
-            ):
-                self.log_message("Profile Editor is already running")
-                return
+            if self.profile_editor_window is None:
+                self.profile_editor_window = ProfileEditorWindow()
 
-            if getattr(sys, "frozen", False):
-                exe_path = Path(sys.executable).resolve()
-                work_dir = exe_path.parent / "_internal"
-
-                if not work_dir.exists():
-                    work_dir = exe_path.parent
-
-                self.profile_editor_process = subprocess.Popen(
-                    [str(exe_path), "--profile-editor"],
-                    cwd=str(work_dir),
-                )
-            else:
-                editor_path = Path(__file__).with_name("profile_editor.py")
-
-                if not editor_path.exists():
-                    QMessageBox.warning(
-                        self,
-                        "Profile Editor Not Found",
-                        f"Could not find:\n\n{editor_path}",
-                    )
-                    return
-
-                self.profile_editor_process = subprocess.Popen(
-                    [sys.executable, str(editor_path)],
-                    cwd=str(editor_path.parent),
-                )
+            self.profile_editor_window.show()
+            self.profile_editor_window.raise_()
+            self.profile_editor_window.activateWindow()
 
             self.log_message("Opened Radio Profile Editor")
 
