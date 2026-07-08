@@ -1,12 +1,91 @@
-# File: main_window.py
+###########################################################################
+# main_window.py
 #
-# Main controller window for the SI5351 Multi-Radio VFO Control Platform.
+# SI5351 Multi-Radio VFO Platform
 #
-# v4D Output Manager Phase 1:
-#   - Adds centralized OutputManager.
-#   - Adds Output Manager window.
-#   - Operator-facing output labels are Output 1 through Output 6.
-#   - Internal firmware protocol remains OUT0 through OUT5.
+# Main Controller Window
+#
+# Purpose:
+#   Implements the primary operator interface for the SI5351 Multi-Radio VFO
+#   Platform.
+#
+# Description:
+#   MainWindow is the central control point for the entire PC application.
+#   It coordinates serial communication, radio profiles, frequency control,
+#   RF output assignment, session management, calibration, the Output Manager,
+#   floating radio windows, Help, About, and the Developer Console.
+#
+# Ham Radio Analogy:
+#   Think of this window as the front panel of the VFO system. It is where
+#   the operator selects the radio, band, RF output, frequency, step size,
+#   RF state, and supporting tools.
+#
+# Architecture Overview:
+#
+#                  MainWindow
+#                      |
+#      +---------------+----------------+
+#      |               |                |
+#   SerialLink     OutputManager   SessionManager
+#      |               |                |
+#      |          Radio Windows    AppSettings
+#      |               |
+#      +-------+-------+---------------+-------------+
+#              |                       |             |
+#      CalibrationWindow        DeveloperConsole   Help/About
+#              |                       |
+#              +---------- SerialLink -+
+#                              |
+#                         USB COM Port
+#                              |
+#                         Arduino Nano
+#                              |
+#                      TCA9548A I2C Mux
+#                    +---------+---------+
+#                    |                   |
+#                SI5351 #1           SI5351 #2
+#                    |                   |
+#              OUT0 OUT1 OUT2     OUT3 OUT4 OUT5
+#
+# Major Responsibilities:
+#   - Build and manage the main GUI.
+#   - Maintain the shared SerialLink connection.
+#   - Load and apply radio profiles.
+#   - Convert operator RF frequency to required VFO output frequency.
+#   - Manage OUT0 through OUT5 ownership.
+#   - Control RF ON/OFF and SPOT operation.
+#   - Display TX/RX and global RF safety status.
+#   - Save and restore station sessions.
+#   - Open supporting tools such as Calibration, Output Manager, Help,
+#     About, Profile Editor, and Developer Console.
+#
+# Important Design Rules:
+#   - Firmware remains stable and is not modified by this module.
+#   - RF, SPOT, and TX states are never restored automatically from session
+#     files. This is a safety rule.
+#   - All windows share the same SerialLink object.
+#   - Operator-facing outputs are labeled Output 1 through Output 6.
+#   - Firmware-facing outputs remain OUT0 through OUT5.
+#
+# Revision History:
+#   v4D Output Manager Phase 1:
+#       - Added centralized OutputManager.
+#       - Added Output Manager window.
+#       - Operator-facing output labels became Output 1 through Output 6.
+#       - Internal firmware protocol remained OUT0 through OUT5.
+#
+#       - Developer Console implementation.:
+#       - Added Developer Console launcher.
+#       - Shared the existing SerialLink with the console.
+#       - Maintained stable firmware interface.
+#
+# Documentation Notes:
+#   This file is intentionally documented for three audiences:
+#       1. Hams who want to understand what the program does.
+#       2. Builders who may modify radio profiles or hardware assignments.
+#       3. Programmers who may maintain or extend the Python/PySide6 code.
+#
+###########################################################################
 
 import json
 import subprocess
@@ -53,7 +132,22 @@ from developer_console import DeveloperConsole
 
 
 class MainWindow(QMainWindow):
+    """Primary Qt main window for the SI5351 Multi-Radio VFO application.
+
+    This class owns the main operator controls and coordinates the other
+    software subsystems. It does not directly generate RF. Instead, it sends
+    commands through SerialLink to the Arduino Nano firmware.
+
+    C/C++ analogy: this class is similar to the main front-panel controller
+    in an embedded instrument. It owns the user interface, dispatches
+    commands, and coordinates lower-level driver modules.
+    """
+
     def __init__(self):
+        """
+        Construct the main window and initialize all major software
+        subsystems.
+        """
         super().__init__()
 
         self.setWindowTitle("Nano Si5351A Ham Radio VFO - Main Controller")
@@ -132,6 +226,15 @@ class MainWindow(QMainWindow):
         self.ensure_all_windows_visible()
 
     def build_ui(self):
+        """
+        Build all visible controls in the main operator window and connect
+        their Qt signals.
+
+        Ham Radio Analogy:
+            This method lays out the front panel: COM controls, radio/band
+            selectors, frequency display, RF controls, status lamps, and
+            service-tool buttons.
+        """
         central = QWidget()
         central.setObjectName("mainActiveFrame")
         central.setAttribute(Qt.WA_StyledBackground, True)
@@ -171,6 +274,7 @@ class MainWindow(QMainWindow):
         self.developer_console_button = QPushButton("Dev Console")
         self.help_button = QPushButton("Help")
         self.about_button = QPushButton("About")
+        self.exit_button = QPushButton("Exit")
 
         self.refresh_button.clicked.connect(self.refresh_ports)
         self.connect_button.clicked.connect(self.connect_radio)
@@ -187,6 +291,7 @@ class MainWindow(QMainWindow):
         self.developer_console_button.clicked.connect(self.show_developer_console)
         self.help_button.clicked.connect(self.show_help_window)
         self.about_button.clicked.connect(self.show_about_dialog)
+        self.exit_button.clicked.connect(self.close)
 
         control_row.addWidget(self.port_label)
         control_row.addWidget(self.port_combo)
@@ -213,6 +318,7 @@ class MainWindow(QMainWindow):
         tool_row.addWidget(self.load_session_button)
         tool_row.addWidget(self.help_button)
         tool_row.addWidget(self.about_button)
+        tool_row.addWidget(self.exit_button)
         tool_row.addStretch()
 
         main_layout.addLayout(tool_row)
@@ -351,6 +457,10 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.log)
 
     def populate_output_combo(self, combo):
+        """
+        Fill an output-selection combo box with Output 1 through Output 6
+        labels.
+        """
         combo.clear()
         for i in range(6):
             combo.addItem(
@@ -359,6 +469,10 @@ class MainWindow(QMainWindow):
             )
 
     def combo_current_output(self, combo):
+        """
+        Return the firmware output name selected in a combo box, such as
+        OUT0.
+        """
         data = combo.currentData()
         if data:
             return data
@@ -373,6 +487,10 @@ class MainWindow(QMainWindow):
         return text
 
     def set_combo_to_output(self, combo, output_name):
+        """
+        Set an output combo box to a specific firmware output name without
+        emitting signals.
+        """
         idx = combo.findData(output_name)
         if idx >= 0:
             combo.blockSignals(True)
@@ -380,6 +498,10 @@ class MainWindow(QMainWindow):
             combo.blockSignals(False)
 
     def init_profiles(self):
+        """
+        Load the profile list into the radio selection combo box after
+        profiles are available.
+        """
         if not self.profiles:
             return
         self.radio_combo.clear()
@@ -391,6 +513,10 @@ class MainWindow(QMainWindow):
         self.schedule_auto_restore()
 
     def load_profiles_from_file(self):
+        """
+        Read radio_profiles.json and return a normalized list of profile
+        dictionaries.
+        """
         profile_path = Path(__file__).with_name("radio_profiles.json")
 
         if not profile_path.exists():
@@ -427,6 +553,10 @@ class MainWindow(QMainWindow):
         return loaded_profiles
 
     def reload_profiles_from_disk(self):
+        """
+        Reload radio profiles from disk while preserving the current
+        selection when possible.
+        """
         try:
             previous_profile_id = None
             previous_profile_name = ""
@@ -503,12 +633,20 @@ class MainWindow(QMainWindow):
             self.log_message(f"Reload profiles error: {e}")
 
     def on_radio_changed(self, *_):
+        """
+        Handle a new radio profile selection from the main Radio combo box.
+        """
         self.current_profile = self.radio_combo.currentData()
         self.update_band_list()
         self.update_compact_identity()
         self.update_output_manager_state()
+        self.retune_current_main_frequency("Radio profile changed")
 
     def update_band_list(self):
+        """
+        Populate the band combo box from the currently selected radio
+        profile.
+        """
         self.band_combo.clear()
         if not self.current_profile:
             return
@@ -519,6 +657,10 @@ class MainWindow(QMainWindow):
             self.band_combo.setCurrentIndex(0)
 
     def on_band_changed(self, *_):
+        """
+        Handle a band selection change and apply that band's default
+        frequency.
+        """
         self.current_band_id = self.band_combo.currentData()
         if not self.current_profile or not self.current_band_id:
             return
@@ -536,11 +678,19 @@ class MainWindow(QMainWindow):
 
         self.update_compact_identity()
         self.update_output_manager_state()
+        self.retune_current_main_frequency("Band changed")
 
     def on_clock_combo_changed(self, *_):
+        """
+        Translate the output combo selection into a firmware output name and
+        apply it.
+        """
         self.on_clock_changed(self.combo_current_output(self.clock_combo))
 
     def on_clock_changed(self, clock_name):
+        """
+        Request a new RF output assignment for Main Radio 1.
+        """
         if clock_name == self.current_clock:
             return
 
@@ -576,6 +726,10 @@ class MainWindow(QMainWindow):
         )
 
     def open_radio_window(self):
+        """
+        Open an additional floating radio-control window using a free RF
+        output.
+        """
         output = self.output_manager.find_free_output_name()
         if output is None:
             self.log_message("No free outputs available for a new radio window")
@@ -600,13 +754,24 @@ class MainWindow(QMainWindow):
         )
 
     def find_free_output(self):
+        """
+        Return the next available firmware output name from the
+        OutputManager.
+        """
         return self.output_manager.find_free_output_name()
 
     def is_output_assigned_to_child(self, output_name):
+        """
+        Report whether an output is owned by a floating radio window.
+        """
         owner = self.output_manager.owner_for_output(output_name)
         return owner not in (None, self.window_id)
 
     def request_output_assignment(self, owner, new_output, old_output=None):
+        """
+        Request reassignment of an RF output on behalf of another radio
+        window.
+        """
         owner_id = getattr(owner, "window_id", str(id(owner)))
         owner_name = getattr(owner, "window_name", "Radio Window")
         old_output = old_output or getattr(owner, "current_clock", new_output)
@@ -627,6 +792,9 @@ class MainWindow(QMainWindow):
         return True
 
     def release_output_assignment(self, owner):
+        """
+        Release all RF output assignments held by a closing radio window.
+        """
         owner_id = getattr(owner, "window_id", None)
         if owner_id:
             self.output_manager.release_owner(owner_id)
@@ -672,6 +840,9 @@ class MainWindow(QMainWindow):
             self.log_message(f"Auto-save error: {e}")
 
     def find_radio_index_by_name(self, display_name):
+        """
+        Find a radio profile row by its display name.
+        """
         for i in range(self.radio_combo.count()):
             profile = self.radio_combo.itemData(i)
             if profile and profile.get("display_name") == display_name:
@@ -679,12 +850,19 @@ class MainWindow(QMainWindow):
         return -1
 
     def find_band_index_by_id(self, band_id):
+        """
+        Find a band combo-box row by its band ID.
+        """
         for i in range(self.band_combo.count()):
             if self.band_combo.itemData(i) == band_id:
                 return i
         return -1
 
     def get_session_state(self):
+        """
+        Capture the current station layout and tuning state for session
+        save/restore.
+        """
         radio_name = ""
         if self.current_profile:
             radio_name = self.current_profile.get("display_name", "")
@@ -711,6 +889,9 @@ class MainWindow(QMainWindow):
         }
 
     def save_session_profile(self):
+        """
+        Prompt for a session name and save the current station session.
+        """
         try:
             name, ok = QInputDialog.getText(
                 self,
@@ -728,6 +909,9 @@ class MainWindow(QMainWindow):
             self.log_message(f"Save session error: {e}")
 
     def load_session_profile(self):
+        """
+        Prompt for a saved session profile and restore it.
+        """
         try:
             names = self.session_manager.list_sessions()
             if not names:
@@ -757,6 +941,9 @@ class MainWindow(QMainWindow):
             self.log_message(f"Load session error: {e}")
 
     def close_floating_windows_for_session_load(self):
+        """
+        Close floating radio windows before restoring a saved session.
+        """
         for window in list(self.radio_windows):
             try:
                 window.close()
@@ -765,6 +952,10 @@ class MainWindow(QMainWindow):
         self.radio_windows.clear()
 
     def apply_main_session_state(self, state):
+        """
+        Restore the main window portion of a saved session while forcing RF-
+        safe state.
+        """
         output = state.get("output", self.current_clock)
         if output != self.current_clock:
             approved = self.output_manager.reassign_output(
@@ -885,7 +1076,7 @@ class MainWindow(QMainWindow):
         self.update_global_rf_indicator()
         self.update_output_manager_state()
         self.set_active_window(self.window_id)
-        self.ensure_all_windows_visible()  # v4D6E
+        self.ensure_all_windows_visible()  # Ensure all application windows remain visible.
 
     def set_active_window(self, owner_id):
         """
@@ -937,6 +1128,9 @@ class MainWindow(QMainWindow):
             )
 
     def mousePressEvent(self, event):
+        """
+        Make Main Radio 1 the active window when the main window is clicked.
+        """
         self.set_active_window(self.window_id)
         super().mousePressEvent(event)
 
@@ -1109,6 +1303,9 @@ class MainWindow(QMainWindow):
             self.log_message(f"Focus window error: {e}")
 
     def show_calibration_window(self):
+        """
+        Open or raise the calibration window.
+        """
         if self.calibration_window is None:
             self.calibration_window = CalibrationWindow(self)
 
@@ -1117,10 +1314,16 @@ class MainWindow(QMainWindow):
         self.calibration_window.activateWindow()
 
     def show_developer_console(self):
+        """
+        Open the Developer Console using the shared SerialLink object.
+        """
         self.developer_console = DeveloperConsole(self.link, self)
         self.developer_console.show()
 
     def show_help_window(self):
+        """
+        Open or raise the Help window.
+        """
         if self.help_window is None:
             self.help_window = HelpWindow(self)
 
@@ -1129,6 +1332,9 @@ class MainWindow(QMainWindow):
         self.help_window.activateWindow()
 
     def show_about_dialog(self):
+        """
+        Display the About dialog modally.
+        """
         dialog = AboutDialog(self)
         dialog.exec()
 
@@ -1190,6 +1396,9 @@ class MainWindow(QMainWindow):
             self.log_message(f"Profile Editor launch error: {e}")
 
     def show_output_manager(self):
+        """
+        Open or raise the Output Manager window.
+        """
         if self.output_manager_window is None:
             self.output_manager_window = OutputManagerWindow(
                 self.output_manager,
@@ -1200,6 +1409,10 @@ class MainWindow(QMainWindow):
         self.output_manager_window.activateWindow()
 
     def update_output_manager_state(self):
+        """
+        Publish Main Radio 1 state into the OutputManager and safety
+        monitor.
+        """
         if hasattr(self, "output_color_label"):
             self.update_output_color_label()
 
@@ -1220,7 +1433,54 @@ class MainWindow(QMainWindow):
         if hasattr(self, "safety_label"):
             self.update_safety_monitor(allow_popup=False)
 
+    def retune_current_main_frequency(self, reason=""):
+        """
+        Recalculate and resend the current main-window frequency to hardware.
+
+        This prevents the SI5351 from remaining at a stale VFO frequency after
+        a radio profile change, band change, or calibration exit.
+        """
+        try:
+            if not self.current_profile or not self.current_band_id:
+                return
+
+            if not self.link.is_connected():
+                return
+
+            result = calculate_output_frequency(
+                self.current_profile,
+                self.current_band_id,
+                self.current_rf_hz,
+            )
+
+            if not result.ok:
+                self.log_message(f"Retune skipped after {reason}: {result.message}")
+                return
+
+            response = self.link.send_frequency(result.output_hz, self.current_clock)
+
+            self.current_rf_hz = int(result.rf_hz)
+            self.current_vfo_hz = int(result.output_hz)
+            self.pending_tune_hz = self.current_rf_hz
+
+            self.freq_entry.setText(str(self.current_rf_hz))
+            self.update_frequency_display()
+            self.vfo_display.setText(f"VFO: {self.format_frequency(result.output_hz)}")
+            self.update_output_manager_state()
+
+            self.log_message(
+                f"Retuned after {reason}: RF {result.rf_hz} -> "
+                f"VFO {result.output_hz} -> {response}"
+            )
+
+        except Exception as e:
+            self.log_message(f"Retune error after {reason}: {e}")
+
     def set_frequency(self):
+        """
+        Parse the frequency entry, calculate VFO output, and send it to the
+        firmware.
+        """
         try:
             rf_hz = self.parse_frequency_entry(self.freq_entry.text())
             if rf_hz < MIN_FREQ_HZ or rf_hz > MAX_FREQ_HZ:
@@ -1250,6 +1510,9 @@ class MainWindow(QMainWindow):
             self.log_message(f"Set frequency error: {e}")
 
     def adjust_frequency(self, direction):
+        """
+        Increment or decrement the RF frequency by the current tuning step.
+        """
         try:
             new_hz = self.current_rf_hz + direction * self.step_hz
             new_hz = max(MIN_FREQ_HZ, min(MAX_FREQ_HZ, new_hz))
@@ -1263,6 +1526,10 @@ class MainWindow(QMainWindow):
             self.log_message(f"Tune error: {e}")
 
     def send_pending_tune_frequency(self):
+        """
+        Send the latest pending tune frequency after rapid tuning input
+        settles.
+        """
         try:
             if not self.current_profile or not self.current_band_id:
                 return
@@ -1284,6 +1551,9 @@ class MainWindow(QMainWindow):
             self.log_message(f"Tune send error: {e}")
 
     def eventFilter(self, obj, event):
+        """
+        Handle keyboard tuning when the frequency display has focus.
+        """
         if obj == self.freq_display and event.type() == QEvent.KeyPress:
             if event.key() == Qt.Key_Up:
                 self.adjust_frequency(+1)
@@ -1300,6 +1570,9 @@ class MainWindow(QMainWindow):
         return super().eventFilter(obj, event)
 
     def keyPressEvent(self, event):
+        """
+        Handle keyboard tuning shortcuts at the main-window level.
+        """
         if event.key() == Qt.Key_Up:
             self.adjust_frequency(+1)
         elif event.key() == Qt.Key_Down:
@@ -1312,6 +1585,10 @@ class MainWindow(QMainWindow):
             super().keyPressEvent(event)
 
     def wheelEvent(self, event):
+        """
+        Tune the frequency with the mouse wheel when the main window has
+        focus.
+        """
         if event.angleDelta().y() > 0:
             self.adjust_frequency(+1)
         elif event.angleDelta().y() < 0:
@@ -1320,6 +1597,10 @@ class MainWindow(QMainWindow):
             super().wheelEvent(event)
 
     def freq_display_wheel(self, event):
+        """
+        Tune the frequency with the mouse wheel when the frequency display
+        is targeted.
+        """
         self.freq_display.setFocus()
         if event.angleDelta().y() > 0:
             self.adjust_frequency(+1)
@@ -1328,6 +1609,10 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def freq_display_clicked(self, event):
+        """
+        Select tuning step size by clicking a digit in the frequency
+        display.
+        """
         self.freq_display.setFocus()
         text = self.display_frequency_text()
         font_metrics = self.freq_display.fontMetrics()
@@ -1368,6 +1653,10 @@ class MainWindow(QMainWindow):
             )
 
     def set_connected_state(self, connected):
+        """
+        Update GUI controls and status indicator for connected/disconnected
+        COM state.
+        """
         self.connect_button.setEnabled(not connected)
         self.disconnect_button.setEnabled(connected)
         self.refresh_button.setEnabled(not connected)
@@ -1410,6 +1699,9 @@ class MainWindow(QMainWindow):
             )
 
     def toggle_monitor(self):
+        """
+        Show or hide the text monitor area.
+        """
         self.monitor_visible = not self.monitor_visible
         self.log.setVisible(self.monitor_visible)
         if self.monitor_visible:
@@ -1420,10 +1712,17 @@ class MainWindow(QMainWindow):
             self.resize(self.normal_width, self.normal_height)
 
     def toggle_compact(self):
+        """
+        Toggle between full control view and compact operating view.
+        """
         self.compact_mode = not self.compact_mode
         self.apply_compact_mode()
 
     def apply_compact_mode(self):
+        """
+        Apply all widget visibility and window-size changes for compact/full
+        mode.
+        """
         self.update_compact_identity()
 
         if self.compact_mode:
@@ -1445,6 +1744,7 @@ class MainWindow(QMainWindow):
             self.profile_editor_button.setVisible(False)
             self.help_button.setVisible(False)
             self.about_button.setVisible(False)
+            self.exit_button.setVisible(False)
 
             self.radio_label.setVisible(False)
             self.radio_combo.setVisible(False)
@@ -1486,6 +1786,7 @@ class MainWindow(QMainWindow):
             self.profile_editor_button.setVisible(True)
             self.help_button.setVisible(True)
             self.about_button.setVisible(True)
+            self.exit_button.setVisible(True)
 
             self.radio_label.setVisible(True)
             self.radio_combo.setVisible(True)
@@ -1510,6 +1811,9 @@ class MainWindow(QMainWindow):
             )
 
     def update_output_color_label(self):
+        """
+        Update the color strip that identifies the current RF output.
+        """
         try:
             index = output_name_to_index(self.current_clock)
             label = output_name_to_user_label(self.current_clock)
@@ -1523,6 +1827,9 @@ class MainWindow(QMainWindow):
             pass
 
     def update_compact_identity(self):
+        """
+        Update the compact-mode identity string for radio, band, and output.
+        """
         self.update_output_color_label()
         radio_name = "No radio"
         if self.current_profile:
@@ -1538,12 +1845,19 @@ class MainWindow(QMainWindow):
         )
 
     def log_message(self, text):
+        """
+        Append a text message to the monitor log or print before the log
+        exists.
+        """
         if hasattr(self, "log"):
             self.log.append(str(text))
         else:
             print(text)
 
     def debug_serial(self, line):
+        """
+        Process asynchronous serial lines such as TX/RX PTT status messages.
+        """
         line = line.strip()
         if self.monitor_visible:
             self.log_message(f"RX: {line}")
@@ -1565,6 +1879,10 @@ class MainWindow(QMainWindow):
             return
 
     def route_ptt_event(self, output, is_tx):
+        """
+        Route a firmware PTT event to the main or floating radio window that
+        owns the output.
+        """
         if output == self.current_clock:
             self.handle_ptt_event(is_tx)
             return
@@ -1574,6 +1892,10 @@ class MainWindow(QMainWindow):
                 return
 
     def handle_ptt_event(self, is_tx):
+        """
+        Update Main Radio 1 TX/RX state and RF output in response to PTT
+        activity.
+        """
         if is_tx:
             self.tx_active = True
             self.txrx_label.setText("TX")
@@ -1593,6 +1915,10 @@ class MainWindow(QMainWindow):
                 self.set_rf_output(False, reason="PTT RX")
 
     def refresh_ports(self):
+        """
+        Refresh the COM-port list and reselect the last used port when
+        available.
+        """
         self.port_combo.clear()
         ports = self.link.list_ports()
         self.port_combo.addItems(ports)
@@ -1607,6 +1933,9 @@ class MainWindow(QMainWindow):
                 self.log_message(f"Last USB COM port {last_port} was not found")
 
     def connect_radio(self):
+        """
+        Open the selected USB COM port and update the GUI connection state.
+        """
         port = self.port_combo.currentText()
 
         if not port:
@@ -1690,6 +2019,10 @@ class MainWindow(QMainWindow):
             self.log_message(f"Post-connect error: {e}")
 
     def disconnect_radio(self):
+        """
+        Turn RF off, mark outputs safe, close the serial connection, and
+        update GUI state.
+        """
         try:
             if self.link.is_connected():
                 self.set_rf_output(False, reason="Disconnect")
@@ -1704,6 +2037,9 @@ class MainWindow(QMainWindow):
         self.set_connected_state(False)
 
     def parse_frequency_entry(self, text):
+        """
+        Convert operator-entered frequency text into integer Hertz.
+        """
         text = text.strip().lower().replace(",", "")
         if not text:
             raise ValueError("Empty frequency")
@@ -1723,30 +2059,47 @@ class MainWindow(QMainWindow):
         return value * 1_000_000
 
     def id_test(self):
+        """
+        Send firmware ID command through the CatRadio wrapper and log the
+        response.
+        """
         try:
             self.log_message(self.radio.get_id())
         except Exception as e:
             self.log_message(f"ID error: {e}")
 
     def read_frequency(self):
+        """
+        Read the firmware frequency response through the CatRadio wrapper.
+        """
         try:
             self.log_message(self.radio.get_frequency())
         except Exception as e:
             self.log_message(f"Read frequency error: {e}")
 
     def rf_on(self):
+        """
+        Manually enable RF output and cancel SPOT mode.
+        """
         self.spot_active = False
         self.spot_button.setText("SPOT OFF")
         self.spot_button.setStyleSheet("")
         self.set_rf_output(True, reason="Manual RF ON")
 
     def rf_off(self):
+        """
+        Manually disable RF output and cancel SPOT mode.
+        """
         self.spot_active = False
         self.spot_button.setText("SPOT OFF")
         self.spot_button.setStyleSheet("")
         self.set_rf_output(False, reason="Manual RF OFF")
 
     def toggle_spot(self):
+        """
+        Toggle SPOT mode, which keeps RF on during receive for
+        spotting/tuning.
+        """
         self.spot_active = not self.spot_active
         if self.spot_active:
             self.spot_button.setText("SPOT ON")
@@ -1763,19 +2116,32 @@ class MainWindow(QMainWindow):
                 self.set_rf_output(False, reason="SPOT OFF")
 
     def read_calibration(self):
+        """
+        Read calibration information through the CatRadio wrapper and log
+        it.
+        """
         try:
             self.log_message(self.radio.get_calibration())
         except Exception as e:
             self.log_message(f"Calibration read error: {e}")
 
     def format_frequency(self, hz):
+        """
+        Format an integer Hertz value as MHz text.
+        """
         return f"{hz / 1_000_000:.6f} MHz"
 
     def display_frequency_text(self):
+        """
+        Format the main RF frequency display text.
+        """
         hz = int(self.current_rf_hz)
         return f"{hz // 1_000_000:02d}.{hz % 1_000_000:06d} MHz"
 
     def format_step(self):
+        """
+        Format the current tuning step as MHz, kHz, or Hz.
+        """
         if self.step_hz >= 1_000_000:
             return f"{self.step_hz // 1_000_000} MHz"
         if self.step_hz >= 1_000:
@@ -1783,6 +2149,10 @@ class MainWindow(QMainWindow):
         return f"{self.step_hz} Hz"
 
     def update_frequency_display(self):
+        """
+        Update the large frequency display and highlight the active tuning
+        digit.
+        """
         text = self.display_frequency_text()
         digit_map = {
             10_000_000: 0,
@@ -1809,6 +2179,9 @@ class MainWindow(QMainWindow):
         self.step_display.setText(f"Step: {self.format_step()}")
 
     def set_step_by_index(self, index):
+        """
+        Select tuning step by step-list index.
+        """
         self.step_index = max(0, min(len(self.step_list) - 1, index))
         self.step_hz = self.step_list[self.step_index]
         self.update_frequency_display()
@@ -1816,6 +2189,9 @@ class MainWindow(QMainWindow):
         self.log_message(f"Main Step: {self.format_step()}")
 
     def set_step_by_hz(self, step_hz):
+        """
+        Select tuning step by Hertz value.
+        """
         if step_hz in self.step_list:
             self.step_index = self.step_list.index(step_hz)
             self.step_hz = step_hz
@@ -1893,7 +2269,7 @@ class MainWindow(QMainWindow):
         Current policy:
           - Multi-band TX is allowed.
           - Same-band simultaneous TX is dangerous.
-          - v4D6E is WARN ONLY. It does not block RF.
+          - This warning is advisory only. It does not block RF operation.
         """
         level, message, key = self.evaluate_safety_state()
 
@@ -1981,6 +2357,10 @@ class MainWindow(QMainWindow):
             self.log_message(f"Global RF indicator error: {e}")
 
     def set_rf_output(self, enabled, reason=""):
+        """
+        Send RF enable/disable to the current output and update safety
+        indicators.
+        """
         if not self.link.is_connected():
             self.log_message("RF enable ignored: serial port not connected")
             self.output_manager.update_rf_state_by_owner(
@@ -2010,6 +2390,9 @@ class MainWindow(QMainWindow):
             self.log_message(f"RF enable error: {e}")
 
     def shutdown_system(self):
+        """
+        Perform RF-safe shutdown actions before application exit.
+        """
         self.log_message("System shutdown initiated")
 
         self.auto_save_last_session()
@@ -2034,59 +2417,15 @@ class MainWindow(QMainWindow):
             except Exception:
                 pass
 
-    def closeEvent(self, event):
-        """
-        Clean shutdown handler.
-
-        Purpose:
-        - Stop timers
-        - Save session state
-        - Close child windows
-        - Disconnect serial port
-        - Allow Python/EXE process to terminate cleanly
-        """
-
-        print("APPLICATION SHUTDOWN")
-
-        try:
-            # Stop monitor/update timers if they exist.
-            if hasattr(self, "monitor_timer"):
-                self.monitor_timer.stop()
-
-            if hasattr(self, "status_timer"):
-                self.status_timer.stop()
-
-            # Save current session before closing child windows.
-            if hasattr(self, "save_session"):
-                self.save_session()
-
-            # Close floating radio windows.
-            if hasattr(self, "radio_windows"):
-                for window in list(self.radio_windows):
-                    try:
-                        window.close()
-                    except Exception as e:
-                        print(f"Radio window close error: {e}")
-
-            # Close Output Manager if open.
-            if hasattr(self, "output_manager") and self.output_manager is not None:
-                try:
-                    self.output_manager.close()
-                except Exception as e:
-                    print(f"Output Manager close error: {e}")
-
-            # Disconnect serial link.
-            if hasattr(self, "link"):
-                self.link.disconnect()
-            elif hasattr(self, "serial"):
-                self.serial.disconnect()
-
-        except Exception as e:
-            print(f"Shutdown cleanup error: {e}")
-
-        QApplication.quit()
-        event.accept()
-
+    #######################################################################
+    # closeEvent()
+    #
+    # Note:
+    #   The uploaded source contained two closeEvent() definitions. Python
+    #   uses the second one and silently replaces the first. This documented
+    #   release keeps the effective second version only, preserving runtime
+    #   behavior while removing dead code.
+    #######################################################################
     def closeEvent(self, event):
         """
         Clean application shutdown.
@@ -2098,6 +2437,9 @@ class MainWindow(QMainWindow):
         print("APPLICATION SHUTDOWN")
 
         try:
+
+            # Save automatic recovery session before closing windows.
+            self.auto_save_last_session()
 
             # Stop timers.
             if hasattr(self, "monitor_timer"):
